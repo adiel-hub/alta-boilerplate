@@ -84,6 +84,8 @@
 | `DATABASE_URL` | Full Postgres connection string | `db:push`, `db:diff`, `db:gen-types` |
 | `GITHUB_TOKEN` | GitHub PAT for push access | Git remote (embedded in origin URL) |
 | `GITHUB_REPO` | GitHub org/repo (e.g. `adiel-hub/my-app`) | Reference, remote URL reconstruction |
+| `VERCEL_URL` | Vercel production URL | Reference |
+| `SUPABASE_DASHBOARD` | Supabase dashboard link | Reference |
 
 ### Vercel env vars (set automatically during project creation)
 | Variable | Purpose |

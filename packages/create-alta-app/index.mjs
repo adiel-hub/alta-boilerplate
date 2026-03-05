@@ -360,6 +360,8 @@ async function main() {
       `DATABASE_URL=${credentials.databaseUrl}`,
       `GITHUB_TOKEN=${githubToken}`,
       `GITHUB_REPO=${credentials.githubFullName || ''}`,
+      `VERCEL_URL=${credentials.vercelUrl || ''}`,
+      `SUPABASE_DASHBOARD=https://supabase.com/dashboard/project/${credentials.supabaseProjectRef}`,
       '',
     ].join('\n');
     fs.writeFileSync(path.join(targetDir, '.env'), env);
