@@ -1,1 +1,11 @@
 @import '@altahq/design-system/styles/styles.css';
+
+@theme inline {
+  --radius: 13px;
+  --radius-sm: 9px;
+  --radius-md: 11px;
+  --radius-lg: 13px;
+  --radius-xl: 17px;
+  --radius-2xl: 21px;
+  --radius-3xl: 25px;
+}

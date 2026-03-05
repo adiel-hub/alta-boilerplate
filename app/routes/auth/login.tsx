@@ -4,6 +4,8 @@ import { Button } from '@altahq/design-system/components/ui/button';
 import { Input } from '@altahq/design-system/components/ui/input';
 import { Label } from '@altahq/design-system/components/ui/label';
 import { Text } from '@altahq/design-system/components/ui/text';
+import { Alert, AlertDescription } from '@altahq/design-system/components/ui/alert';
+import { Spinner } from '@altahq/design-system/components/ui/spinner';
 import { getSupabaseClient } from '~/lib/supabase/client';
 
 export default function LoginRoute() {
@@ -30,44 +32,58 @@ export default function LoginRoute() {
 
   return (
     <div>
-      <Text variant="heading3" className="mb-6">
-        Sign In
-      </Text>
-      {error && (
-        <Text variant="small" className="mb-4 text-destructive">
-          {error}
+      <div className="mb-6 text-center">
+        <Text variant="heading4">Welcome back</Text>
+        <Text variant="muted" className="mt-1">
+          Sign in to your account
         </Text>
+      </div>
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <Input
+            id="email"
+            type="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password">Password</Label>
+            <Link to="/forgot-password" className="text-xs text-muted-foreground hover:text-primary">
+              Forgot password?
+            </Link>
+          </div>
           <Input
             id="password"
             type="password"
+            placeholder="••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
         </div>
         <Button type="submit" disabled={loading} className="w-full">
+          {loading ? <Spinner className="mr-2 h-4 w-4" /> : null}
           {loading ? 'Signing in...' : 'Sign In'}
         </Button>
       </form>
-      <Text variant="small" className="mt-4 text-center text-muted-foreground">
-        Don't have an account?{' '}
-        <Link to="/signup" className="text-primary underline">
-          Sign up
-        </Link>
-      </Text>
-      <Text variant="small" className="mt-2 text-center">
-        <Link to="/forgot-password" className="text-muted-foreground underline">
-          Forgot password?
-        </Link>
-      </Text>
+      <div className="mt-6 text-center">
+        <Text variant="small" className="text-muted-foreground">
+          Don't have an account?{' '}
+          <Link to="/signup" className="font-medium text-primary hover:underline">
+            Sign up
+          </Link>
+        </Text>
+      </div>
     </div>
   );
 }

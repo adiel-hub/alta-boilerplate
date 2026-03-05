@@ -4,6 +4,8 @@ import { Button } from '@altahq/design-system/components/ui/button';
 import { Input } from '@altahq/design-system/components/ui/input';
 import { Label } from '@altahq/design-system/components/ui/label';
 import { Text } from '@altahq/design-system/components/ui/text';
+import { Alert, AlertDescription } from '@altahq/design-system/components/ui/alert';
+import { Spinner } from '@altahq/design-system/components/ui/spinner';
 import { getSupabaseClient } from '~/lib/supabase/client';
 
 export default function SignupRoute() {
@@ -30,40 +32,57 @@ export default function SignupRoute() {
 
   return (
     <div>
-      <Text variant="heading3" className="mb-6">
-        Sign Up
-      </Text>
-      {error && (
-        <Text variant="small" className="mb-4 text-destructive">
-          {error}
+      <div className="mb-6 text-center">
+        <Text variant="heading4">Create an account</Text>
+        <Text variant="muted" className="mt-1">
+          Get started with Alta
         </Text>
+      </div>
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <Input
+            id="email"
+            type="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
         </div>
         <div className="space-y-2">
           <Label htmlFor="password">Password</Label>
           <Input
             id="password"
             type="password"
+            placeholder="••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             minLength={6}
             required
           />
+          <Text variant="small" className="text-muted-foreground">
+            Must be at least 6 characters
+          </Text>
         </div>
         <Button type="submit" disabled={loading} className="w-full">
+          {loading ? <Spinner className="mr-2 h-4 w-4" /> : null}
           {loading ? 'Creating account...' : 'Sign Up'}
         </Button>
       </form>
-      <Text variant="small" className="mt-4 text-center text-muted-foreground">
-        Already have an account?{' '}
-        <Link to="/login" className="text-primary underline">
-          Sign in
-        </Link>
-      </Text>
+      <div className="mt-6 text-center">
+        <Text variant="small" className="text-muted-foreground">
+          Already have an account?{' '}
+          <Link to="/login" className="font-medium text-primary hover:underline">
+            Sign in
+          </Link>
+        </Text>
+      </div>
     </div>
   );
 }
