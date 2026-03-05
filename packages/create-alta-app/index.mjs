@@ -4,15 +4,15 @@ import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import prompts from 'prompts';
+import ora from 'ora';
+import pc from 'picocolors';
 
 const TEMPLATE_REPO = 'adiel-hub/alta-boilerplate';
 const BRANCH = 'main';
-
-// ── Alta project provisioning service ──
 const ALTA_SERVICE_URL = 'https://ikbbbmmzxeemjwzrzsmt.supabase.co/functions/v1/create-project';
 
 function run(cmd, cwd) {
-  execSync(cmd, { cwd, stdio: 'inherit' });
+  execSync(cmd, { cwd, stdio: 'ignore' });
 }
 
 function canRun(cmd) {
@@ -45,16 +45,10 @@ async function createProject(name, password) {
 function removeAuth(targetDir) {
   const appDir = path.join(targetDir, 'app');
 
-  // Remove auth routes
   fs.rmSync(path.join(appDir, 'routes', 'auth'), { recursive: true, force: true });
-
-  // Remove auth provider
   fs.unlinkSync(path.join(appDir, 'providers', 'auth-provider.tsx'));
-
-  // Rewrite providers/index.ts — no auth exports
   fs.writeFileSync(path.join(appDir, 'providers', 'index.ts'), '');
 
-  // Rewrite routes.ts — no auth routes
   fs.writeFileSync(
     path.join(appDir, 'routes.ts'),
     `import { type RouteConfig, route, layout } from '@react-router/dev/routes';
@@ -70,7 +64,6 @@ export default [
 `
   );
 
-  // Rewrite _index.tsx — redirect to dashboard
   fs.writeFileSync(
     path.join(appDir, 'routes', '_index.tsx'),
     `import { useEffect } from 'react';
@@ -88,7 +81,6 @@ export default function IndexRoute() {
 `
   );
 
-  // Rewrite app/_layout.tsx — no auth guard
   fs.writeFileSync(
     path.join(appDir, 'routes', 'app', '_layout.tsx'),
     `import { Outlet } from 'react-router';
@@ -111,7 +103,6 @@ export default function AppLayoutRoute() {
 `
   );
 
-  // Rewrite root.tsx — no AuthProvider
   fs.writeFileSync(
     path.join(appDir, 'root.tsx'),
     `import { Links, Meta, Outlet, Scripts, ScrollRestoration } from 'react-router';
@@ -150,7 +141,6 @@ export default function Root() {
 `
   );
 
-  // Rewrite header.tsx — no user/signOut
   fs.writeFileSync(
     path.join(appDir, 'components', 'layout', 'header.tsx'),
     `import { Separator } from '@altahq/design-system/components/ui/separator';
@@ -169,7 +159,6 @@ export function Header() {
 `
   );
 
-  // Rewrite dashboard — no user reference
   fs.writeFileSync(
     path.join(appDir, 'routes', 'app', 'dashboard.tsx'),
     `import { Card, CardContent, CardHeader, CardTitle } from '@altahq/design-system/components/ui/card';
@@ -221,7 +210,6 @@ export default function DashboardRoute() {
 `
   );
 
-  // Rewrite settings — no user reference
   fs.writeFileSync(
     path.join(appDir, 'routes', 'app', 'settings.tsx'),
     `import { Card, CardContent, CardHeader, CardTitle } from '@altahq/design-system/components/ui/card';
@@ -250,7 +238,10 @@ export default function SettingsRoute() {
 }
 
 async function main() {
-  console.log('\n  create-alta-app\n');
+  console.log('');
+  console.log(pc.bold(pc.magenta('  ✦ create-alta-app')));
+  console.log(pc.dim('  Full-stack project scaffolding'));
+  console.log('');
 
   const argName = process.argv[2];
 
@@ -259,14 +250,14 @@ async function main() {
       {
         type: argName ? null : 'text',
         name: 'projectName',
-        message: 'Project name:',
+        message: 'Project name',
         initial: 'my-alta-app',
         validate: (v) => (v.length > 0 ? true : 'Project name is required'),
       },
       {
         type: 'password',
         name: 'password',
-        message: 'Alta password:',
+        message: 'Alta password',
         validate: (v) => (v.length > 0 ? true : 'Password is required'),
       },
       {
@@ -285,52 +276,63 @@ async function main() {
   const targetDir = path.resolve(process.cwd(), projectName);
 
   if (fs.existsSync(targetDir)) {
-    console.error(`\n  Error: Directory "${projectName}" already exists.\n`);
+    console.log(`\n  ${pc.red('✗')} Directory ${pc.bold(`"${projectName}"`)} already exists.\n`);
     process.exit(1);
   }
 
-  // ── Clone template ──
-  console.log('  Downloading template...\n');
-  run(`npx --yes degit ${TEMPLATE_REPO}#${BRANCH} "${projectName}"`, process.cwd());
+  console.log('');
 
-  // Remove the create-alta-app package from the cloned template
-  const cliDir = path.join(targetDir, 'packages', 'create-alta-app');
-  if (fs.existsSync(cliDir)) {
-    fs.rmSync(cliDir, { recursive: true, force: true });
+  // ── Step 1: Clone template ──
+  const spinnerClone = ora({ text: 'Downloading template...', indent: 2 }).start();
+  try {
+    run(`npx --yes degit ${TEMPLATE_REPO}#${BRANCH} "${projectName}"`, process.cwd());
+
+    const cliDir = path.join(targetDir, 'packages', 'create-alta-app');
+    if (fs.existsSync(cliDir)) fs.rmSync(cliDir, { recursive: true, force: true });
+    const packagesDir = path.join(targetDir, 'packages');
+    if (fs.existsSync(packagesDir) && fs.readdirSync(packagesDir).length === 0) {
+      fs.rmSync(packagesDir, { recursive: true, force: true });
+    }
+
+    const rootPkgPath = path.join(targetDir, 'package.json');
+    const rootPkg = JSON.parse(fs.readFileSync(rootPkgPath, 'utf-8'));
+    rootPkg.name = projectName;
+    fs.writeFileSync(rootPkgPath, JSON.stringify(rootPkg, null, 2) + '\n');
+
+    spinnerClone.succeed(pc.green('Template downloaded'));
+  } catch (err) {
+    spinnerClone.fail(pc.red('Failed to download template'));
+    throw err;
   }
 
-  // Remove the packages dir if empty
-  const packagesDir = path.join(targetDir, 'packages');
-  if (fs.existsSync(packagesDir) && fs.readdirSync(packagesDir).length === 0) {
-    fs.rmSync(packagesDir, { recursive: true, force: true });
-  }
-
-  // Update package.json name
-  const rootPkgPath = path.join(targetDir, 'package.json');
-  const rootPkg = JSON.parse(fs.readFileSync(rootPkgPath, 'utf-8'));
-  rootPkg.name = projectName;
-  fs.writeFileSync(rootPkgPath, JSON.stringify(rootPkg, null, 2) + '\n');
-
-  // ── Remove auth if not needed ──
+  // ── Step 2: Remove auth if not needed ──
   if (!response.includeAuth) {
-    console.log('  Removing auth...\n');
-    removeAuth(targetDir);
+    const spinnerAuth = ora({ text: 'Removing authentication...', indent: 2 }).start();
+    try {
+      removeAuth(targetDir);
+      spinnerAuth.succeed(pc.green('Authentication removed'));
+    } catch (err) {
+      spinnerAuth.fail(pc.red('Failed to remove auth'));
+      throw err;
+    }
   }
 
-  // ── Create Supabase + Vercel projects ──
-  console.log('  Creating Supabase & Vercel projects...\n');
-
+  // ── Step 3: Create cloud projects ──
+  const spinnerCloud = ora({ text: 'Creating Supabase & Vercel projects...', indent: 2 }).start();
   let credentials;
   try {
     credentials = await createProject(projectName, response.password);
+    spinnerCloud.succeed(pc.green('Cloud projects created'));
   } catch (err) {
-    console.error(`  Error creating projects: ${err.message}`);
-    console.error('  You can set up manually later.\n');
+    spinnerCloud.fail(pc.yellow('Could not create cloud projects'));
+    console.log(`  ${pc.dim(err.message)}`);
+    console.log(`  ${pc.dim('You can set up manually later.')}`);
     credentials = null;
   }
 
+  // ── Step 4: Write env files ──
   if (credentials) {
-    // Write .env at project root — used by Vite dev server
+    const spinnerEnv = ora({ text: 'Writing environment variables...', indent: 2 }).start();
     const env = [
       `VITE_SUPABASE_URL=${credentials.supabaseUrl}`,
       `VITE_SUPABASE_ANON_KEY=${credentials.supabaseAnonKey}`,
@@ -340,62 +342,71 @@ async function main() {
       '',
     ].join('\n');
     fs.writeFileSync(path.join(targetDir, '.env'), env);
-
-    console.log('  Supabase project created.');
-    if (credentials.vercelUrl) {
-      console.log('  Vercel project created.');
-    }
-    console.log('');
+    spinnerEnv.succeed(pc.green('Environment configured'));
   }
 
-  // ── Install dependencies ──
-  console.log('  Installing dependencies...\n');
+  // ── Step 5: Install dependencies ──
   if (canRun('pnpm --version')) {
-    run('pnpm install', targetDir);
+    const spinnerInstall = ora({ text: 'Installing dependencies...', indent: 2 }).start();
+    try {
+      run('pnpm install', targetDir);
+      spinnerInstall.succeed(pc.green('Dependencies installed'));
+    } catch {
+      spinnerInstall.fail(pc.yellow('Failed to install dependencies'));
+      console.log(`  ${pc.dim(`Run: cd ${projectName} && pnpm install`)}`);
+    }
   } else {
-    console.log('  pnpm not found. Install it with: npm install -g pnpm');
-    console.log(`  Then run: cd ${projectName} && pnpm install\n`);
+    console.log(`  ${pc.yellow('⚠')} pnpm not found. Install it: ${pc.bold('npm install -g pnpm')}`);
+    console.log(`  ${pc.dim(`Then run: cd ${projectName} && pnpm install`)}`);
   }
 
-  // ── Init git + push to GitHub ──
-  run('git init', targetDir);
-  run('git add -A', targetDir);
+  // ── Step 6: Init git + push ──
+  const spinnerGit = ora({ text: 'Initializing git...', indent: 2 }).start();
   try {
+    run('git init', targetDir);
+    run('git add -A', targetDir);
     run('git commit -m "Initial commit from create-alta-app"', targetDir);
+    spinnerGit.succeed(pc.green('Git initialized'));
   } catch {
-    // git commit can fail if no user is configured
+    spinnerGit.warn(pc.yellow('Git init completed (commit may have failed)'));
   }
 
   if (credentials?.githubRepoUrl) {
-    console.log('  Pushing to GitHub...\n');
+    const spinnerPush = ora({ text: 'Pushing to GitHub...', indent: 2 }).start();
     try {
       run(`git remote add origin ${credentials.githubRepoUrl}`, targetDir);
       run('git branch -M main', targetDir);
       run('git push -u origin main', targetDir);
-      console.log('  Pushed to GitHub.\n');
+      spinnerPush.succeed(pc.green('Pushed to GitHub'));
     } catch {
-      console.log('  Could not push to GitHub. Push manually with: git push -u origin main\n');
+      spinnerPush.warn(pc.yellow('Could not push to GitHub'));
+      console.log(`  ${pc.dim('Push manually: git push -u origin main')}`);
     }
   }
 
   // ── Done ──
-  console.log(`\n  Done! Your project is ready.\n`);
+  console.log('');
+  console.log(pc.bold(pc.green('  ✦ Your project is ready!')));
+  console.log('');
+
   if (credentials) {
-    console.log(`  Supabase:  ${credentials.supabaseUrl}`);
+    console.log(`  ${pc.dim('Supabase')}  ${credentials.supabaseUrl}`);
     if (credentials.vercelUrl) {
-      console.log(`  Vercel:    ${credentials.vercelUrl}`);
+      console.log(`  ${pc.dim('Vercel')}    ${credentials.vercelUrl}`);
     }
     if (credentials.githubRepoUrl) {
-      console.log(`  GitHub:    ${credentials.githubRepoUrl}`);
+      console.log(`  ${pc.dim('GitHub')}    ${credentials.githubRepoUrl}`);
     }
-    console.log(`  DB pass:   ${credentials.dbPassword}  (save this!)`);
+    console.log(`  ${pc.dim('DB pass')}   ${pc.yellow(credentials.dbPassword)}  ${pc.dim('(save this!)')}`);
     console.log('');
-    console.log('  Auto-deploy: every push deploys to Vercel');
+    console.log(`  ${pc.dim('Auto-deploy: every push to GitHub deploys to Vercel')}`);
     console.log('');
   }
-  console.log(`  Next steps:\n`);
-  console.log(`    cd ${projectName}`);
-  console.log(`    pnpm dev`);
+
+  console.log(pc.bold('  Next steps:'));
+  console.log('');
+  console.log(`    ${pc.cyan(`cd ${projectName}`)}`);
+  console.log(`    ${pc.cyan('pnpm dev')}`);
   console.log('');
 }
 
