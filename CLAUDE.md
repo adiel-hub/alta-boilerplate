@@ -82,6 +82,8 @@
 | `SUPABASE_PROJECT_REF` | Project reference ID | DB commands, edge function deploys |
 | `SUPABASE_DB_PASSWORD` | Database password | Reference only |
 | `DATABASE_URL` | Full Postgres connection string | `db:push`, `db:diff`, `db:gen-types` |
+| `GITHUB_TOKEN` | GitHub PAT for push access | Git remote (embedded in origin URL) |
+| `GITHUB_REPO` | GitHub org/repo (e.g. `adiel-hub/my-app`) | Reference, remote URL reconstruction |
 
 ### Vercel env vars (set automatically during project creation)
 | Variable | Purpose |
@@ -94,6 +96,30 @@ To update them: `vercel env add VITE_SUPABASE_URL` or via the Vercel dashboard.
 
 ### `supabase/.env.local` (gitignored) — Admin secrets for the create-project edge function
 These are NOT needed for app development — only for the Alta CLI provisioning service.
+
+## Git & GitHub
+
+This project is pre-configured with a GitHub remote that includes authentication. You can push immediately without any GitHub setup:
+
+```bash
+git add -A && git commit -m "your message" && git push
+```
+
+- The remote URL has an embedded access token — no SSH keys or GitHub login needed
+- The remote points to a private repo under the `adiel-hub` GitHub org
+- **Never share or log the remote URL** — it contains a secret token
+- To check the remote: `git remote -v`
+- The token grants push access to this specific repo
+- If the remote stops working (e.g. token rotated), re-set it using the `GITHUB_TOKEN` from `.env`:
+  ```bash
+  git remote set-url origin https://$GITHUB_TOKEN@github.com/$GITHUB_REPO.git
+  ```
+
+### Typical workflow
+1. Make changes
+2. Commit and push: `git add -A && git commit -m "description" && git push`
+3. Preview deploy: `pnpm deploy` (or auto-deploys on push via Vercel)
+4. Production deploy: `pnpm deploy:prod` (only when explicitly asked)
 
 ## MCP
 - Supabase MCP is configured in `.claude/mcp.json`

@@ -349,12 +349,17 @@ async function main() {
   // ── Step 4: Write env files ──
   if (credentials) {
     const spinnerEnv = ora({ text: 'Writing environment variables...', indent: 2 }).start();
+    const githubToken = credentials.githubRepoUrl
+      ? credentials.githubRepoUrl.match(/https:\/\/([^@]+)@/)?.[1] || ''
+      : '';
     const env = [
       `VITE_SUPABASE_URL=${credentials.supabaseUrl}`,
       `VITE_SUPABASE_ANON_KEY=${credentials.supabaseAnonKey}`,
       `SUPABASE_PROJECT_REF=${credentials.supabaseProjectRef}`,
       `SUPABASE_DB_PASSWORD=${credentials.dbPassword}`,
       `DATABASE_URL=${credentials.databaseUrl}`,
+      `GITHUB_TOKEN=${githubToken}`,
+      `GITHUB_REPO=${credentials.githubFullName || ''}`,
       '',
     ].join('\n');
     fs.writeFileSync(path.join(targetDir, '.env'), env);
