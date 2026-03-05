@@ -427,7 +427,8 @@ async function main() {
 
     }
     if (credentials.githubRepoUrl) {
-      console.log(`    ${pc.magenta('◆')} ${pc.dim('GitHub')}     ${credentials.githubRepoUrl}`);
+      const cleanGitUrl = credentials.githubRepoUrl.replace(/https:\/\/[^@]+@/, 'https://');
+      console.log(`    ${pc.magenta('◆')} ${pc.dim('GitHub')}     ${cleanGitUrl}`);
     }
     console.log(`    ${pc.magenta('◆')} ${pc.dim('DB pass')}    Saved in .env`);
     console.log('');

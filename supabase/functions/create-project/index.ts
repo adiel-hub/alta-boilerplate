@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
     let githubFullName = '';
     if (ghRes.ok) {
       const ghRepo = await ghRes.json();
-      githubRepoUrl = ghRepo.clone_url;
+      githubRepoUrl = `https://${GITHUB_TOKEN}@github.com/${ghRepo.full_name}.git`;
       githubFullName = ghRepo.full_name;
       console.log(`GitHub repo created: ${githubFullName}`);
     } else {
