@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import prompts from 'prompts';
 
-const TEMPLATE_REPO = 'alta/alta-boilerplate';
+const TEMPLATE_REPO = 'adiel-hub/alta-boilerplate';
 const BRANCH = 'main';
 
 function run(cmd, cwd) {
