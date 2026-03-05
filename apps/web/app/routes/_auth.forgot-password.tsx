@@ -1,5 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
+import { Button } from '@altahq/design-system/components/ui/button';
+import { Input } from '@altahq/design-system/components/ui/input';
+import { Label } from '@altahq/design-system/components/ui/label';
+import { Text } from '@altahq/design-system/components/ui/text';
 import { getSupabaseClient } from '~/lib/supabase/client';
 
 export default function ForgotPasswordRoute() {
@@ -29,9 +33,11 @@ export default function ForgotPasswordRoute() {
   if (sent) {
     return (
       <div className="text-center">
-        <h1 className="mb-4 text-2xl font-bold">Check your email</h1>
-        <p className="text-gray-600">We sent a password reset link to {email}</p>
-        <Link to="/login" className="mt-4 inline-block text-sm text-black underline">
+        <Text variant="heading3" className="mb-4">
+          Check your email
+        </Text>
+        <Text variant="muted">We sent a password reset link to {email}</Text>
+        <Link to="/login" className="mt-4 inline-block text-sm text-primary underline">
           Back to sign in
         </Link>
       </div>
@@ -40,35 +46,28 @@ export default function ForgotPasswordRoute() {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-bold">Reset Password</h1>
-      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      <Text variant="heading3" className="mb-6">
+        Reset Password
+      </Text>
+      {error && (
+        <Text variant="small" className="mb-4 text-destructive">
+          {error}
+        </Text>
+      )}
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="email" className="mb-1 block text-sm font-medium">
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded border px-3 py-2"
-            required
-          />
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         </div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded bg-black py-2 text-white hover:bg-gray-800 disabled:opacity-50"
-        >
+        <Button type="submit" disabled={loading} className="w-full">
           {loading ? 'Sending...' : 'Send Reset Link'}
-        </button>
+        </Button>
       </form>
-      <p className="mt-4 text-center text-sm">
-        <Link to="/login" className="text-gray-500 underline">
+      <Text variant="small" className="mt-4 text-center">
+        <Link to="/login" className="text-muted-foreground underline">
           Back to sign in
         </Link>
-      </p>
+      </Text>
     </div>
   );
 }

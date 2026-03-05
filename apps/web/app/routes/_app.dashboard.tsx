@@ -1,3 +1,5 @@
+import { Card, CardContent, CardHeader, CardTitle } from '@altahq/design-system/components/ui/card';
+import { Text } from '@altahq/design-system/components/ui/text';
 import { useAuth } from '~/providers/auth-provider';
 
 export default function DashboardRoute() {
@@ -5,8 +7,17 @@ export default function DashboardRoute() {
 
   return (
     <div>
-      <h1 className="mb-4 text-2xl font-bold">Dashboard</h1>
-      <p className="text-gray-600">Welcome, {user?.email}</p>
+      <Text variant="heading3" className="mb-4">
+        Dashboard
+      </Text>
+      <Card>
+        <CardHeader>
+          <CardTitle>Welcome</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Text variant="muted">Signed in as {user?.email}</Text>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -1,5 +1,9 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
+import { Button } from '@altahq/design-system/components/ui/button';
+import { Input } from '@altahq/design-system/components/ui/input';
+import { Label } from '@altahq/design-system/components/ui/label';
+import { Text } from '@altahq/design-system/components/ui/text';
 import { getSupabaseClient } from '~/lib/supabase/client';
 
 export default function SignupRoute() {
@@ -26,50 +30,40 @@ export default function SignupRoute() {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-bold">Sign Up</h1>
-      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      <Text variant="heading3" className="mb-6">
+        Sign Up
+      </Text>
+      {error && (
+        <Text variant="small" className="mb-4 text-destructive">
+          {error}
+        </Text>
+      )}
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="email" className="mb-1 block text-sm font-medium">
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded border px-3 py-2"
-            required
-          />
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         </div>
-        <div>
-          <label htmlFor="password" className="mb-1 block text-sm font-medium">
-            Password
-          </label>
-          <input
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <Input
             id="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded border px-3 py-2"
             minLength={6}
             required
           />
         </div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded bg-black py-2 text-white hover:bg-gray-800 disabled:opacity-50"
-        >
+        <Button type="submit" disabled={loading} className="w-full">
           {loading ? 'Creating account...' : 'Sign Up'}
-        </button>
+        </Button>
       </form>
-      <p className="mt-4 text-center text-sm text-gray-600">
+      <Text variant="small" className="mt-4 text-center text-muted-foreground">
         Already have an account?{' '}
-        <Link to="/login" className="text-black underline">
+        <Link to="/login" className="text-primary underline">
           Sign in
         </Link>
-      </p>
+      </Text>
     </div>
   );
 }

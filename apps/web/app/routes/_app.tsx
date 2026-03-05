@@ -1,6 +1,8 @@
 import { Navigate, Outlet } from 'react-router';
+import { Spinner } from '@altahq/design-system/components/ui/spinner';
 import { useAuth } from '~/providers/auth-provider';
-import { AppLayout } from '~/components/layout/app-layout';
+import { AppSidebar } from '~/components/layout/sidebar';
+import { Header } from '~/components/layout/header';
 
 export default function AppLayoutRoute() {
   const { user, isLoading } = useAuth();
@@ -8,7 +10,7 @@ export default function AppLayoutRoute() {
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <p className="text-gray-500">Loading...</p>
+        <Spinner />
       </div>
     );
   }
@@ -18,8 +20,14 @@ export default function AppLayoutRoute() {
   }
 
   return (
-    <AppLayout>
-      <Outlet />
-    </AppLayout>
+    <div className="flex h-screen">
+      <AppSidebar />
+      <div className="flex flex-1 flex-col">
+        <Header />
+        <main className="flex-1 overflow-auto p-6">
+          <Outlet />
+        </main>
+      </div>
+    </div>
   );
 }

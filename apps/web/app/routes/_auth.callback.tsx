@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router';
+import { Spinner } from '@altahq/design-system/components/ui/spinner';
+import { Text } from '@altahq/design-system/components/ui/text';
 import { getSupabaseClient } from '~/lib/supabase/client';
 
 export default function AuthCallbackRoute() {
@@ -15,8 +17,9 @@ export default function AuthCallbackRoute() {
   }, [navigate, supabase]);
 
   return (
-    <div className="text-center">
-      <p className="text-gray-500">Completing sign in...</p>
+    <div className="flex items-center justify-center gap-2">
+      <Spinner />
+      <Text variant="muted">Completing sign in...</Text>
     </div>
   );
 }

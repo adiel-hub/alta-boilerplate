@@ -12,7 +12,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Meta />
         <Links />
       </head>
-      <body className="bg-white text-gray-900 antialiased">
+      <body className="bg-background text-foreground antialiased">
         {children}
         <ScrollRestoration />
         <Scripts />
@@ -24,7 +24,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export function HydrateFallback() {
   return (
     <div className="flex h-screen items-center justify-center">
-      <p className="text-lg text-gray-500">Loading...</p>
+      <p className="text-muted-foreground">Loading...</p>
     </div>
   );
 }

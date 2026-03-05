@@ -14,6 +14,11 @@
 - `packages/eslint-config` - Shared ESLint config
 - `packages/typescript-config` - Shared tsconfig
 
+## UI Components
+- **ALWAYS use `@altahq/design-system` first** for buttons, inputs, colors, typography, and all UI components
+- Only use plain Tailwind or other components if the design system doesn't have what you need
+- Import from: `import { Button, Input, ... } from '@altahq/design-system'`
+
 ## Conventions
 - File naming: kebab-case
 - Zod for validation, derive types with `z.infer<typeof schema>`
