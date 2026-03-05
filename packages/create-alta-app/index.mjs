@@ -43,13 +43,16 @@ async function createProject(name, password) {
 }
 
 function removeAuth(targetDir) {
-  const appDir = path.join(targetDir, 'apps', 'web', 'app');
+  const appDir = path.join(targetDir, 'app');
 
   // Remove auth routes
   fs.rmSync(path.join(appDir, 'routes', 'auth'), { recursive: true, force: true });
 
   // Remove auth provider
   fs.unlinkSync(path.join(appDir, 'providers', 'auth-provider.tsx'));
+
+  // Rewrite providers/index.ts — no auth exports
+  fs.writeFileSync(path.join(appDir, 'providers', 'index.ts'), '');
 
   // Rewrite routes.ts — no auth routes
   fs.writeFileSync(
@@ -67,7 +70,7 @@ export default [
 `
   );
 
-  // Rewrite _index.tsx — redirect to dashboard (useEffect for SPA pre-render compat)
+  // Rewrite _index.tsx — redirect to dashboard
   fs.writeFileSync(
     path.join(appDir, 'routes', '_index.tsx'),
     `import { useEffect } from 'react';
@@ -112,7 +115,6 @@ export default function AppLayoutRoute() {
   fs.writeFileSync(
     path.join(appDir, 'root.tsx'),
     `import { Links, Meta, Outlet, Scripts, ScrollRestoration } from 'react-router';
-import { QueryProvider } from '~/providers/query-provider';
 import './styles/tailwind.css';
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -121,6 +123,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" type="image/png" href="/alta-icon.png" />
         <Meta />
         <Links />
       </head>
@@ -142,11 +145,7 @@ export function HydrateFallback() {
 }
 
 export default function Root() {
-  return (
-    <QueryProvider>
-      <Outlet />
-    </QueryProvider>
-  );
+  return <Outlet />;
 }
 `
   );
@@ -159,9 +158,9 @@ import { Text } from '@altahq/design-system/components/ui/text';
 
 export function Header() {
   return (
-    <header className="flex items-center gap-2 border-b px-4 py-2">
+    <header className="flex h-14 items-center gap-2 border-b px-4">
       <Separator orientation="vertical" className="h-4" />
-      <div className="ml-auto flex items-center gap-4">
+      <div className="ml-auto flex items-center gap-3">
         <Text variant="muted">Alta App</Text>
       </div>
     </header>
@@ -175,21 +174,47 @@ export function Header() {
     path.join(appDir, 'routes', 'app', 'dashboard.tsx'),
     `import { Card, CardContent, CardHeader, CardTitle } from '@altahq/design-system/components/ui/card';
 import { Text } from '@altahq/design-system/components/ui/text';
+import { Badge } from '@altahq/design-system/components/ui/badge';
+import { Separator } from '@altahq/design-system/components/ui/separator';
 
 export default function DashboardRoute() {
   return (
-    <div>
-      <Text variant="heading3" className="mb-4">
-        Dashboard
-      </Text>
-      <Card>
-        <CardHeader>
-          <CardTitle>Welcome</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Text variant="muted">Your app is ready.</Text>
-        </CardContent>
-      </Card>
+    <div className="space-y-6">
+      <div>
+        <Text variant="heading3">Dashboard</Text>
+        <Text variant="muted" className="mt-1">Welcome to your app</Text>
+      </div>
+      <Separator />
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Status</CardTitle>
+            <Badge variant="default">Active</Badge>
+          </CardHeader>
+          <CardContent>
+            <Text variant="heading3">All systems go</Text>
+            <Text variant="small" className="mt-1 text-muted-foreground">Your app is running smoothly</Text>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Environment</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Text variant="heading3">Development</Text>
+            <Text variant="small" className="mt-1 text-muted-foreground">Local dev server</Text>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Framework</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Text variant="heading3">Alta</Text>
+            <Text variant="small" className="mt-1 text-muted-foreground">React + Supabase + Vercel</Text>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
@@ -204,10 +229,11 @@ import { Text } from '@altahq/design-system/components/ui/text';
 
 export default function SettingsRoute() {
   return (
-    <div>
-      <Text variant="heading3" className="mb-4">
-        Settings
-      </Text>
+    <div className="space-y-6">
+      <div>
+        <Text variant="heading3">Settings</Text>
+        <Text variant="muted" className="mt-1">Manage your app preferences</Text>
+      </div>
       <Card>
         <CardHeader>
           <CardTitle>App Settings</CardTitle>
@@ -273,6 +299,12 @@ async function main() {
     fs.rmSync(cliDir, { recursive: true, force: true });
   }
 
+  // Remove the packages dir if empty
+  const packagesDir = path.join(targetDir, 'packages');
+  if (fs.existsSync(packagesDir) && fs.readdirSync(packagesDir).length === 0) {
+    fs.rmSync(packagesDir, { recursive: true, force: true });
+  }
+
   // Update package.json name
   const rootPkgPath = path.join(targetDir, 'package.json');
   const rootPkg = JSON.parse(fs.readFileSync(rootPkgPath, 'utf-8'));
@@ -293,27 +325,21 @@ async function main() {
     credentials = await createProject(projectName, response.password);
   } catch (err) {
     console.error(`  Error creating projects: ${err.message}`);
-    console.error('  You can set up manually later with: bash scripts/setup.sh\n');
+    console.error('  You can set up manually later.\n');
     credentials = null;
   }
 
   if (credentials) {
-    // Write apps/web/.env — used by Vite dev server and Vercel builds
-    const webEnv = [
+    // Write .env at project root — used by Vite dev server
+    const env = [
       `VITE_SUPABASE_URL=${credentials.supabaseUrl}`,
       `VITE_SUPABASE_ANON_KEY=${credentials.supabaseAnonKey}`,
-      '',
-    ].join('\n');
-    fs.writeFileSync(path.join(targetDir, 'apps', 'web', '.env'), webEnv);
-
-    // Write packages/supabase/.env — used by supabase CLI for migrations & dev
-    const supabaseEnv = [
       `SUPABASE_PROJECT_REF=${credentials.supabaseProjectRef}`,
       `SUPABASE_DB_PASSWORD=${credentials.dbPassword}`,
       `DATABASE_URL=${credentials.databaseUrl}`,
       '',
     ].join('\n');
-    fs.writeFileSync(path.join(targetDir, 'packages', 'supabase', '.env'), supabaseEnv);
+    fs.writeFileSync(path.join(targetDir, '.env'), env);
 
     console.log('  Supabase project created.');
     if (credentials.vercelUrl) {
