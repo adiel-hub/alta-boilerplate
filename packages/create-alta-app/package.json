@@ -1,0 +1,15 @@
+{
+  "name": "create-alta-app",
+  "version": "1.0.0",
+  "description": "Create a new Alta project",
+  "bin": {
+    "create-alta-app": "./index.mjs"
+  },
+  "files": ["index.mjs"],
+  "type": "module",
+  "keywords": ["alta", "boilerplate", "supabase", "react", "vite"],
+  "license": "MIT",
+  "dependencies": {
+    "prompts": "^2.4.2"
+  }
+}

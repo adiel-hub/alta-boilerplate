@@ -1,0 +1,14 @@
+{
+  "name": "@alta/shared",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@alta/typescript-config": "workspace:*",
+    "typescript": "^5.7.0"
+  }
+}
