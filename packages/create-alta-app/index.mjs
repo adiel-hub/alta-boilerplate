@@ -238,9 +238,21 @@ export default function SettingsRoute() {
 }
 
 async function main() {
+  console.clear();
   console.log('');
-  console.log(pc.bold(pc.magenta('  ✦ create-alta-app')));
-  console.log(pc.dim('  Full-stack project scaffolding'));
+  console.log(pc.magenta('   ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓'));
+  console.log(pc.magenta('   ┃                                              ┃'));
+  console.log(pc.magenta('   ┃') + pc.bold(pc.white('      ██████╗ ██╗  ████████╗ ██████╗       ')) + pc.magenta('┃'));
+  console.log(pc.magenta('   ┃') + pc.bold(pc.white('     ██╔══██╗██║  ╚══██╔══╝██╔══██╗      ')) + pc.magenta('┃'));
+  console.log(pc.magenta('   ┃') + pc.bold(pc.white('     ███████║██║     ██║   ███████║      ')) + pc.magenta('┃'));
+  console.log(pc.magenta('   ┃') + pc.bold(pc.white('     ██╔══██║██║     ██║   ██╔══██║      ')) + pc.magenta('┃'));
+  console.log(pc.magenta('   ┃') + pc.bold(pc.white('     ██║  ██║███████╗██║   ██║  ██║      ')) + pc.magenta('┃'));
+  console.log(pc.magenta('   ┃') + pc.bold(pc.white('     ╚═╝  ╚═╝╚══════╝╚═╝   ╚═╝  ╚═╝      ')) + pc.magenta('┃'));
+  console.log(pc.magenta('   ┃                                              ┃'));
+  console.log(pc.magenta('   ┃') + pc.dim('     The Full-Stack Project Scaffolding      ') + pc.magenta('┃'));
+  console.log(pc.magenta('   ┃') + pc.dim('       React · Supabase · Vercel · AI        ') + pc.magenta('┃'));
+  console.log(pc.magenta('   ┃                                              ┃'));
+  console.log(pc.magenta('   ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛'));
   console.log('');
 
   const argName = process.argv[2];
@@ -386,29 +398,39 @@ async function main() {
 
   // ── Done ──
   console.log('');
-  console.log(pc.bold(pc.green('  ✦ Your project is ready!')));
+  console.log(pc.green('   ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓'));
+  console.log(pc.green('   ┃                                              ┃'));
+  console.log(pc.green('   ┃') + pc.bold(pc.white('        ✦ Your project is ready! ✦          ')) + pc.green('┃'));
+  console.log(pc.green('   ┃                                              ┃'));
+  console.log(pc.green('   ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛'));
   console.log('');
 
   if (credentials) {
-    console.log(`  ${pc.dim('Supabase')}  ${credentials.supabaseUrl}`);
+    console.log(`  ${pc.bold('Project Details:')}`);
+    console.log('');
+    console.log(`    ${pc.magenta('◆')} ${pc.dim('Supabase')}   ${credentials.supabaseUrl}`);
     if (credentials.vercelUrl) {
-      console.log(`  ${pc.dim('Vercel')}    ${credentials.vercelUrl}`);
+      console.log(`    ${pc.magenta('◆')} ${pc.dim('Vercel')}     ${credentials.vercelUrl}`);
     }
     if (credentials.githubRepoUrl) {
-      console.log(`  ${pc.dim('GitHub')}    ${credentials.githubRepoUrl}`);
+      console.log(`    ${pc.magenta('◆')} ${pc.dim('GitHub')}     ${credentials.githubRepoUrl}`);
     }
-    console.log(`  ${pc.dim('DB pass')}   Saved in .env`);
+    console.log(`    ${pc.magenta('◆')} ${pc.dim('DB pass')}    Saved in .env`);
     console.log('');
-    console.log(`  ${pc.dim('Auto-deploy: every push to GitHub deploys to Vercel')}`);
+    console.log(`  ${pc.dim('───────────────────────────────────────────')}`);
+    console.log(`  ${pc.dim('Auto-deploy: every push to GitHub → Vercel')}`);
+    console.log(`  ${pc.dim('───────────────────────────────────────────')}`);
     console.log('');
   }
 
   // ── Step 7: Start dev server ──
-  console.log(pc.bold('  Starting dev server...\n'));
+  console.log(`  ${pc.bold('Starting dev server...')}`);
+  console.log('');
   try {
     execSync('pnpm dev', { cwd: targetDir, stdio: 'inherit' });
   } catch {
-    console.log(`\n  ${pc.dim('To start manually:')}`);
+    console.log('');
+    console.log(`  ${pc.dim('To start manually:')}`);
     console.log(`    ${pc.cyan(`cd ${projectName}`)}`);
     console.log(`    ${pc.cyan('pnpm dev')}`);
     console.log('');
