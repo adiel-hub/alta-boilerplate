@@ -397,17 +397,22 @@ async function main() {
     if (credentials.githubRepoUrl) {
       console.log(`  ${pc.dim('GitHub')}    ${credentials.githubRepoUrl}`);
     }
-    console.log(`  ${pc.dim('DB pass')}   ${pc.yellow(credentials.dbPassword)}  ${pc.dim('(save this!)')}`);
+    console.log(`  ${pc.dim('DB pass')}   Saved in .env`);
     console.log('');
     console.log(`  ${pc.dim('Auto-deploy: every push to GitHub deploys to Vercel')}`);
     console.log('');
   }
 
-  console.log(pc.bold('  Next steps:'));
-  console.log('');
-  console.log(`    ${pc.cyan(`cd ${projectName}`)}`);
-  console.log(`    ${pc.cyan('pnpm dev')}`);
-  console.log('');
+  // ── Step 7: Start dev server ──
+  console.log(pc.bold('  Starting dev server...\n'));
+  try {
+    execSync('pnpm dev', { cwd: targetDir, stdio: 'inherit' });
+  } catch {
+    console.log(`\n  ${pc.dim('To start manually:')}`);
+    console.log(`    ${pc.cyan(`cd ${projectName}`)}`);
+    console.log(`    ${pc.cyan('pnpm dev')}`);
+    console.log('');
+  }
 }
 
 main().catch((err) => {
