@@ -30,28 +30,70 @@
 - Barrel exports via `index.ts` files
 
 ## Commands
-- `pnpm dev` - Start dev server
-- `pnpm build` - Build
+
+### Development
+- `pnpm dev` - Start dev server (localhost:5173)
+- `pnpm build` - Build for production
 - `pnpm type-check` - TypeScript check
 - `pnpm format` - Format with Prettier
 - `pnpm format:check` - Check formatting
-- `pnpm db:gen-types` - Generate TypeScript types from DB schema (cloud)
-- `pnpm db:push` - Push migrations to cloud
-- `pnpm db:diff` - Diff schema changes
-- `pnpm deploy` - Deploy preview to Vercel
-- `pnpm deploy:prod` - Deploy production to Vercel
-- `bash scripts/setup.sh` - First-time setup (creates cloud Supabase project + Vercel project + writes .env)
 
-## Deployment
-- Everything works on `main` — no branches
+### Vercel Deployment
+- `pnpm deploy` - **Preview deploy** (gives a unique preview URL to test)
+- `pnpm deploy:prod` - **Production deploy** (updates the live site)
+- Preview deploys are created per push — each gets a unique URL like `https://project-xyz123.vercel.app`
+- Production deploy updates `https://<project-name>.vercel.app`
+- **ONLY run `pnpm deploy:prod` when the user explicitly asks** (e.g. "deploy to production", "go live")
 - After making code changes, **always commit, push, and deploy a preview**:
   ```
   git add -A && git commit -m "description" && git push && pnpm deploy
   ```
-- `pnpm deploy` → **preview deploy** (gives a unique preview URL to test)
-- **ONLY run `pnpm deploy:prod` when the user explicitly asks** (e.g. "deploy to production", "update production", "go live")
-- Never deploy to production automatically — always preview first
-- Vercel env vars (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY) are set automatically during setup
+- Auto-deploy is also set up: every push to GitHub triggers a Vercel deploy automatically
+
+### Database & Migrations
+- `pnpm db:gen-types` - Generate TypeScript types from DB schema → `app/lib/supabase/types/database.types.ts`
+- `pnpm db:new-migration <name>` - Create a new migration file in `supabase/migrations/`
+- `pnpm db:push` - Push local migrations to the cloud Supabase DB
+- `pnpm db:diff` - Diff local schema changes against the cloud DB
+- `pnpm db:reset` - Reset the cloud DB and re-run all migrations
+
+**Migration workflow:**
+1. Create a migration: `pnpm db:new-migration add_users_table`
+2. Edit the SQL file in `supabase/migrations/`
+3. Push to cloud: `pnpm db:push`
+4. Regenerate types: `pnpm db:gen-types`
+
+### Edge Functions
+- Edge functions live in `supabase/functions/<function-name>/index.ts`
+- Deploy a function: `npx supabase functions deploy <function-name> --project-ref $SUPABASE_PROJECT_REF`
+- Deploy all functions: `npx supabase functions deploy --project-ref $SUPABASE_PROJECT_REF`
+- View logs: `npx supabase functions logs <function-name> --project-ref $SUPABASE_PROJECT_REF`
+- Set secrets: `npx supabase secrets set KEY=value --project-ref $SUPABASE_PROJECT_REF`
+- List secrets: `npx supabase secrets list --project-ref $SUPABASE_PROJECT_REF`
+- The `SUPABASE_PROJECT_REF` is in `.env`
+
+## Environment Variables
+
+### `.env` (root, gitignored) — App runtime + DB credentials
+| Variable | Purpose | Used by |
+|---|---|---|
+| `VITE_SUPABASE_URL` | Supabase project URL | App (browser, via Vite) |
+| `VITE_SUPABASE_ANON_KEY` | Supabase anon/public key | App (browser, via Vite) |
+| `SUPABASE_PROJECT_REF` | Project reference ID | DB commands, edge function deploys |
+| `SUPABASE_DB_PASSWORD` | Database password | Reference only |
+| `DATABASE_URL` | Full Postgres connection string | `db:push`, `db:diff`, `db:gen-types` |
+
+### Vercel env vars (set automatically during project creation)
+| Variable | Purpose |
+|---|---|
+| `VITE_SUPABASE_URL` | Same as local — used at build time |
+| `VITE_SUPABASE_ANON_KEY` | Same as local — used at build time |
+
+These are set on the Vercel project for all environments (production, preview, development).
+To update them: `vercel env add VITE_SUPABASE_URL` or via the Vercel dashboard.
+
+### `supabase/.env.local` (gitignored) — Admin secrets for the create-project edge function
+These are NOT needed for app development — only for the Alta CLI provisioning service.
 
 ## MCP
 - Supabase MCP is configured in `.claude/mcp.json`

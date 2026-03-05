@@ -240,19 +240,23 @@ export default function SettingsRoute() {
 async function main() {
   console.clear();
   console.log('');
-  console.log(pc.magenta('   ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓'));
-  console.log(pc.magenta('   ┃                                              ┃'));
-  console.log(pc.magenta('   ┃') + pc.bold(pc.white('      ██████╗ ██╗  ████████╗ ██████╗       ')) + pc.magenta('┃'));
-  console.log(pc.magenta('   ┃') + pc.bold(pc.white('     ██╔══██╗██║  ╚══██╔══╝██╔══██╗      ')) + pc.magenta('┃'));
-  console.log(pc.magenta('   ┃') + pc.bold(pc.white('     ███████║██║     ██║   ███████║      ')) + pc.magenta('┃'));
-  console.log(pc.magenta('   ┃') + pc.bold(pc.white('     ██╔══██║██║     ██║   ██╔══██║      ')) + pc.magenta('┃'));
-  console.log(pc.magenta('   ┃') + pc.bold(pc.white('     ██║  ██║███████╗██║   ██║  ██║      ')) + pc.magenta('┃'));
-  console.log(pc.magenta('   ┃') + pc.bold(pc.white('     ╚═╝  ╚═╝╚══════╝╚═╝   ╚═╝  ╚═╝      ')) + pc.magenta('┃'));
-  console.log(pc.magenta('   ┃                                              ┃'));
-  console.log(pc.magenta('   ┃') + pc.dim('     The Full-Stack Project Scaffolding      ') + pc.magenta('┃'));
-  console.log(pc.magenta('   ┃') + pc.dim('       React · Supabase · Vercel · AI        ') + pc.magenta('┃'));
-  console.log(pc.magenta('   ┃                                              ┃'));
-  console.log(pc.magenta('   ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛'));
+  const W = 44;
+  const line = (s) => pc.magenta('   ┃') + pc.bold(pc.white(s.padEnd(W))) + pc.magenta('┃');
+  const dim  = (s) => pc.magenta('   ┃') + pc.dim(s.padEnd(W)) + pc.magenta('┃');
+  const empty = () => pc.magenta('   ┃') + ' '.repeat(W) + pc.magenta('┃');
+  console.log(pc.magenta('   ┏' + '━'.repeat(W) + '┓'));
+  console.log(empty());
+  console.log(line('     █████╗ ██╗  ████████╗█████╗ '));
+  console.log(line('    ██╔══██╗██║  ╚══██╔══╝██╔══██╗'));
+  console.log(line('    ███████║██║     ██║   ███████║'));
+  console.log(line('    ██╔══██║██║     ██║   ██╔══██║'));
+  console.log(line('    ██║  ██║███████╗██║   ██║  ██║'));
+  console.log(line('    ╚═╝  ╚═╝╚══════╝╚═╝   ╚═╝  ╚═╝'));
+  console.log(empty());
+  console.log(dim('    The Full-Stack Project Scaffolder'));
+  console.log(dim('  React · Supabase · Vercel · Claude Skills'));
+  console.log(empty());
+  console.log(pc.magenta('   ┗' + '━'.repeat(W) + '┛'));
   console.log('');
 
   const argName = process.argv[2];
@@ -372,7 +376,20 @@ async function main() {
     console.log(`  ${pc.dim(`Then run: cd ${projectName} && pnpm install`)}`);
   }
 
-  // ── Step 6: Init git + push ──
+  // ── Step 6: Install Claude Skills ──
+  const spinnerSkills = ora({ text: 'Installing Claude Skills...', indent: 2 }).start();
+  try {
+    run('npx --yes skills add https://github.com/supabase/agent-skills --skill supabase-postgres-best-practices', targetDir);
+    run('npx --yes skills add https://github.com/vercel-labs/agent-skills --skill vercel-react-best-practices', targetDir);
+    run('npx --yes skills add https://github.com/vercel-labs/agent-skills --skill web-design-guidelines', targetDir);
+    run('npx --yes skills add https://github.com/anthropics/skills --skill frontend-design', targetDir);
+    spinnerSkills.succeed(pc.green('Claude Skills installed'));
+  } catch {
+    spinnerSkills.warn(pc.yellow('Could not install Claude Skills'));
+    console.log(`  ${pc.dim('Install manually: npx skills add <package>')}`);
+  }
+
+  // ── Step 7: Init git + push ──
   const spinnerGit = ora({ text: 'Initializing git...', indent: 2 }).start();
   try {
     run('git init', targetDir);
@@ -398,11 +415,7 @@ async function main() {
 
   // ── Done ──
   console.log('');
-  console.log(pc.green('   ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓'));
-  console.log(pc.green('   ┃                                              ┃'));
-  console.log(pc.green('   ┃') + pc.bold(pc.white('        ✦ Your project is ready! ✦          ')) + pc.green('┃'));
-  console.log(pc.green('   ┃                                              ┃'));
-  console.log(pc.green('   ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛'));
+  console.log(pc.bold(pc.green('  Your project is ready!')));
   console.log('');
 
   if (credentials) {
@@ -410,7 +423,8 @@ async function main() {
     console.log('');
     console.log(`    ${pc.magenta('◆')} ${pc.dim('Supabase')}   ${credentials.supabaseUrl}`);
     if (credentials.vercelUrl) {
-      console.log(`    ${pc.magenta('◆')} ${pc.dim('Vercel')}     ${credentials.vercelUrl}`);
+      console.log(`    ${pc.magenta('◆')} ${pc.dim('Vercel')}     ${credentials.vercelUrl} ${pc.dim('(first deploy may take a few minutes)')}`);
+
     }
     if (credentials.githubRepoUrl) {
       console.log(`    ${pc.magenta('◆')} ${pc.dim('GitHub')}     ${credentials.githubRepoUrl}`);
@@ -423,7 +437,7 @@ async function main() {
     console.log('');
   }
 
-  // ── Step 7: Start dev server ──
+  // ── Step 8: Start dev server ──
   console.log(`  ${pc.bold('Starting dev server...')}`);
   console.log('');
   try {
