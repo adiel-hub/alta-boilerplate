@@ -8,13 +8,22 @@
     "type-check": "turbo type-check",
     "test": "turbo test",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\""
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "db:push": "pnpm --filter @alta/supabase db:push",
+    "db:diff": "pnpm --filter @alta/supabase db:diff",
+    "db:reset": "pnpm --filter @alta/supabase db:reset",
+    "db:new-migration": "pnpm --filter @alta/supabase db:new-migration",
+    "db:gen-types": "pnpm --filter @alta/supabase gen-types",
+    "deploy": "vercel",
+    "deploy:prod": "vercel --prod"
   },
   "devDependencies": {
     "prettier": "^3.5.0",
     "prettier-plugin-tailwindcss": "^0.6.0",
+    "supabase": "^2.0.0",
     "turbo": "^2.4.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vercel": "^50.27.1"
   },
   "packageManager": "pnpm@9.15.0",
   "engines": {

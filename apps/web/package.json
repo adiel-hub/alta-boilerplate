@@ -29,7 +29,6 @@
     "@alta/eslint-config": "workspace:*",
     "@alta/typescript-config": "workspace:*",
     "@react-router/dev": "^7.3.0",
-    "@react-router/fs-routes": "^7.3.0",
     "@tailwindcss/vite": "^4.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

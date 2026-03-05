@@ -25,7 +25,7 @@
 - TanStack Query with query key factory (`lib/query/query-keys.ts`)
 - Supabase client singleton (`lib/supabase/client.ts`)
 - Auth via React context provider (`providers/auth-provider.tsx`)
-- Protected routes via `_app.tsx` layout route
+- Protected routes via `routes/app/_layout.tsx` layout route
 - Barrel exports via `index.ts` files
 
 ## Commands
@@ -34,10 +34,28 @@
 - `pnpm type-check` - TypeScript check
 - `pnpm format` - Format with Prettier
 - `pnpm format:check` - Check formatting
-- `pnpm --filter @alta/supabase db:start` - Start local Supabase
-- `pnpm --filter @alta/supabase gen-types` - Generate DB types
+- `pnpm db:gen-types` - Generate TypeScript types from DB schema (cloud)
+- `pnpm deploy` - Deploy preview to Vercel
+- `pnpm deploy:prod` - Deploy production to Vercel
+- `bash scripts/setup.sh` - First-time setup (creates cloud Supabase project + Vercel project + writes .env)
 
-## Routes
-- `_auth.*` routes - Public (login, signup, forgot-password, callback)
-- `_app.*` routes - Protected (dashboard, settings)
-- `_app.tsx` acts as auth guard for all nested routes
+## Deployment
+- Everything works on `main` — no branches
+- After making code changes, **always commit, push, and deploy a preview**:
+  ```
+  git add -A && git commit -m "description" && git push && pnpm deploy
+  ```
+- `pnpm deploy` → **preview deploy** (gives a unique preview URL to test)
+- **ONLY run `pnpm deploy:prod` when the user explicitly asks** (e.g. "deploy to production", "update production", "go live")
+- Never deploy to production automatically — always preview first
+- Vercel env vars (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY) are set automatically during setup
+
+## MCP
+- Supabase MCP is configured in `.claude/mcp.json`
+- Use MCP tools to query, migrate, and manage the Supabase project directly from Claude Code
+
+## Routes (folder-based, explicit config in `routes.ts`)
+- `routes/auth/` - Public (login, signup, forgot-password, callback)
+- `routes/app/` - Protected (dashboard, settings)
+- `routes/app/_layout.tsx` acts as auth guard for all nested routes
+- `routes/auth/_layout.tsx` provides centered card layout for auth pages

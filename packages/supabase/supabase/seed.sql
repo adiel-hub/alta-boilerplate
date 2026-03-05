@@ -1,2 +1,0 @@
--- Seed data for local development.
--- This file runs automatically on `supabase db reset`.

@@ -1,0 +1,20 @@
+# Alta Team Tokens
+# Get these from the team lead, then save this file as scripts/.tokens
+
+# Supabase: https://supabase.com/dashboard/account/tokens
+SUPABASE_ACCESS_TOKEN=sbp_xxxxxxxxxxxx
+
+# Supabase org ID (from: supabase orgs list)
+SUPABASE_ORG_ID=xxxxxxxxxxxx
+
+# Vercel: https://vercel.com/account/tokens
+VERCEL_TOKEN=xxxxxxxxxxxx
+
+# Vercel team slug (from: vercel teams ls)
+VERCEL_TEAM=altahq
+
+# GitHub: https://github.com/settings/tokens (repo scope)
+GITHUB_TOKEN=ghp_xxxxxxxxxxxx
+
+# GitHub org (leave empty for personal account)
+GITHUB_ORG=altahq
