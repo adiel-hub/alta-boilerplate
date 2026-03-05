@@ -4,7 +4,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 TOKENS_FILE="$SCRIPT_DIR/.tokens"
-ENV_FILE="$ROOT_DIR/apps/web/.env"
+ENV_FILE="$ROOT_DIR/.env"
 
 echo "=============================="
 echo "  Alta Project Setup"
@@ -153,7 +153,7 @@ fi
 echo "VITE_SUPABASE_URL=${SUPABASE_URL}" > "$ENV_FILE"
 echo "VITE_SUPABASE_ANON_KEY=${ANON_KEY}" >> "$ENV_FILE"
 
-cd "$ROOT_DIR/packages/supabase"
+cd "$ROOT_DIR/supabase"
 npx supabase link --project-ref "$PROJECT_REF" -p "$DB_PASSWORD" --token "$SUPABASE_ACCESS_TOKEN"
 cd "$ROOT_DIR"
 

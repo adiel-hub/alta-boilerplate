@@ -3,16 +3,18 @@
 ## Tech Stack
 - React 19 + React Router v7 (framework mode, SPA) + Vite
 - Tailwind CSS v4
-- TanStack Query v5 + Supabase
+- Supabase (Auth, DB, Edge Functions)
 - TypeScript (strict mode)
-- pnpm monorepo with Turborepo
+- pnpm
 
-## Monorepo Structure
-- `apps/web` - React SPA
-- `packages/supabase` - DB config, migrations, edge functions, generated types
-- `packages/shared` - Shared schemas, types, utils
-- `packages/eslint-config` - Shared ESLint config
-- `packages/typescript-config` - Shared tsconfig
+## Project Structure
+- `app/` - React SPA source
+  - `components/` - UI components
+  - `lib/shared/` - Shared schemas, types, utils, constants
+  - `lib/supabase/` - Supabase client + generated types
+  - `providers/` - Auth provider
+  - `routes/` - Route components
+- `supabase/` - Supabase config, migrations, edge functions
 
 ## UI Components
 - **ALWAYS use `@altahq/design-system` first** for buttons, inputs, colors, typography, and all UI components
@@ -22,7 +24,6 @@
 ## Conventions
 - File naming: kebab-case
 - Zod for validation, derive types with `z.infer<typeof schema>`
-- TanStack Query with query key factory (`lib/query/query-keys.ts`)
 - Supabase client singleton (`lib/supabase/client.ts`)
 - Auth via React context provider (`providers/auth-provider.tsx`)
 - Protected routes via `routes/app/_layout.tsx` layout route
@@ -30,11 +31,13 @@
 
 ## Commands
 - `pnpm dev` - Start dev server
-- `pnpm build` - Build all packages
+- `pnpm build` - Build
 - `pnpm type-check` - TypeScript check
 - `pnpm format` - Format with Prettier
 - `pnpm format:check` - Check formatting
 - `pnpm db:gen-types` - Generate TypeScript types from DB schema (cloud)
+- `pnpm db:push` - Push migrations to cloud
+- `pnpm db:diff` - Diff schema changes
 - `pnpm deploy` - Deploy preview to Vercel
 - `pnpm deploy:prod` - Deploy production to Vercel
 - `bash scripts/setup.sh` - First-time setup (creates cloud Supabase project + Vercel project + writes .env)

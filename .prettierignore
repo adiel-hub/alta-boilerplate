@@ -1,6 +1,5 @@
 node_modules
 build
 dist
-.turbo
 pnpm-lock.yaml
-packages/supabase/src/types/database.types.ts
+app/lib/supabase/types/database.types.ts

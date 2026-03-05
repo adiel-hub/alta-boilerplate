@@ -51,7 +51,7 @@ echo ""
 echo "── Setting secrets on Supabase project ──"
 echo ""
 
-cd packages/supabase
+cd supabase
 
 npx supabase link --project-ref "$ADMIN_PROJECT_REF" --token "$SUPABASE_ACCESS_TOKEN"
 
@@ -71,7 +71,7 @@ echo ""
 
 npx supabase functions deploy create-project --no-verify-jwt --token "$SUPABASE_ACCESS_TOKEN"
 
-cd ../..
+cd ..
 
 SERVICE_URL="https://${ADMIN_PROJECT_REF}.supabase.co/functions/v1/create-project"
 
@@ -83,14 +83,7 @@ echo ""
 echo "  Edge function deployed to:"
 echo "  $SERVICE_URL"
 echo ""
-echo "  Now update these 2 values in packages/create-alta-app/index.mjs:"
+echo "  Service URL: ${SERVICE_URL}"
+echo "  Password:    ${PASSWORD}"
 echo ""
-echo "    ALTA_SERVICE_URL = '${SERVICE_URL}'"
-echo "    PASSWORD     = '${PASSWORD}'"
-echo ""
-echo "  Then publish the CLI:"
-echo "    cd packages/create-alta-app && npm publish"
-echo ""
-echo "  After that, anyone can run:"
-echo "    npx create-alta-app my-project"
-echo "  and get a full GitHub + Supabase + Vercel project with auto-deploy."
+echo "  Save these values — they are needed to call the provisioning function."

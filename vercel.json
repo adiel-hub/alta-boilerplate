@@ -1,5 +1,5 @@
 {
-  "buildCommand": "pnpm turbo build --filter=@alta/web",
-  "outputDirectory": "apps/web/build/client",
+  "buildCommand": "pnpm build",
+  "outputDirectory": "build/client",
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }

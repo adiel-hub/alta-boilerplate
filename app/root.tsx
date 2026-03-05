@@ -1,6 +1,5 @@
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from 'react-router';
 import { AuthProvider } from '~/providers/auth-provider';
-import { QueryProvider } from '~/providers/query-provider';
 import './styles/tailwind.css';
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -31,10 +30,8 @@ export function HydrateFallback() {
 
 export default function Root() {
   return (
-    <QueryProvider>
-      <AuthProvider>
-        <Outlet />
-      </AuthProvider>
-    </QueryProvider>
+    <AuthProvider>
+      <Outlet />
+    </AuthProvider>
   );
 }

@@ -126,8 +126,8 @@ Deno.serve(async (req) => {
     const vercelBody: Record<string, unknown> = {
       name,
       framework: 'vite',
-      buildCommand: 'pnpm turbo build --filter=@alta/web',
-      outputDirectory: 'apps/web/build/client',
+      buildCommand: 'pnpm build',
+      outputDirectory: 'build/client',
     };
 
     // Connect GitHub repo to Vercel for auto-deploy
