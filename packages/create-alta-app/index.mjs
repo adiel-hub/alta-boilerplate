@@ -264,7 +264,8 @@ async function main() {
   console.log(pc.magenta('   ┗' + '━'.repeat(W) + '┛'));
   console.log('');
 
-  const MONOREPO_BASE = path.join(os.homedir(), 'alta', 'apps', 'ai-engineer');
+  // Install under apps/ai-engineer/ relative to cwd (the monorepo root)
+  const MONOREPO_BASE = path.join(process.cwd(), 'apps', 'ai-engineer');
   const argName = process.argv[2];
 
   const response = await prompts(
