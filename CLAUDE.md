@@ -65,45 +65,32 @@
 
 ### Edge Functions
 - Edge functions live in `supabase/functions/<function-name>/index.ts`
-- Deploy a function: `npx supabase functions deploy <function-name> --project-ref $SUPABASE_PROJECT_REF`
-- Deploy all functions: `npx supabase functions deploy --project-ref $SUPABASE_PROJECT_REF`
-- Set secrets: `npx supabase secrets set KEY=value --project-ref $SUPABASE_PROJECT_REF`
-- List secrets: `npx supabase secrets list --project-ref $SUPABASE_PROJECT_REF`
-- The `SUPABASE_PROJECT_REF` comes from `alta.config.json`
+- Deploy a function: `npx supabase functions deploy <function-name> --linked`
+- Deploy all functions: `npx supabase functions deploy --linked`
+- Set secrets: `npx supabase secrets set KEY=value --linked`
+- List secrets: `npx supabase secrets list --linked`
+- All commands use `--linked` which reads the project ref from the local Supabase config (set during install)
 
-## Shell Credentials (~/.zshrc)
+## Supabase Authentication
 
-The CLI installer (`create-alta-app`) adds the following to `~/.zshrc`:
+The installer (`create-alta-app`) automatically:
+1. Runs `supabase login --token <token>` — authenticates the Supabase CLI (persists in `~/.supabase/`)
+2. Runs `supabase link --project-ref <ref>` — links the project so all `--linked` commands work
 
+All db commands (`pnpm db:push`, `pnpm db:gen-types`, etc.) use `--linked` which reads from the local Supabase config. No environment variables or `.env` files needed.
+
+### Claude Code MCP
+The MCP token is written directly to `.claude/mcp.json` during install — no shell env vars needed.
+
+### Troubleshooting
+If Supabase CLI commands fail with "not linked":
 ```bash
-# Alta
-export SUPABASE_ACCESS_TOKEN=sbp_...
+npx supabase link --project-ref <ref-from-alta.config.json>
 ```
-
-This token is **org-level** — it grants access to all Supabase projects in the Alta org via the Management API. It's used by:
-- **Supabase CLI** — all `npx supabase` commands automatically read `$SUPABASE_ACCESS_TOKEN` from the environment (no `supabase login` needed)
-- **Claude Code MCP** — `.claude/mcp.json` references `${SUPABASE_ACCESS_TOKEN}` which Claude Code resolves from the shell environment
-
-### How Supabase CLI uses the token
-The Supabase CLI automatically picks up `SUPABASE_ACCESS_TOKEN` from the environment. No need to run `supabase login`. Examples:
+If CLI commands fail with "Access token not provided":
 ```bash
-# These all work without login — the CLI reads SUPABASE_ACCESS_TOKEN from ~/.zshrc
-npx supabase functions deploy my-function --project-ref <ref>
-npx supabase secrets list --project-ref <ref>
-npx supabase db push --project-ref <ref>
+npx supabase login
 ```
-
-### Important
-- The token is set once during `npx create-alta-app` and persists across all projects
-- If Claude Code can't access Supabase MCP, make sure `SUPABASE_ACCESS_TOKEN` is exported in your shell (restart terminal after first install)
-- **Never commit this token** — it lives only in `~/.zshrc`
-
-### Troubleshooting: "Access token not provided"
-If Supabase CLI commands fail with "Access token not provided" after a fresh install:
-1. The installer writes `SUPABASE_ACCESS_TOKEN` to `~/.zshrc`, but your current terminal session won't have it until you reload
-2. Run `source ~/.zshrc` in your terminal, or restart the terminal
-3. Verify with `echo $SUPABASE_ACCESS_TOKEN` — it should print the token
-4. As a one-time fallback you can run `npx supabase link --project-ref <ref>` to authenticate the project directly
 
 ## Project Config (zero-env architecture)
 
@@ -132,9 +119,8 @@ Shared API keys (Anthropic, Cursor, Lovable, etc.) are automatically set as Supa
 
 ## MCP
 - Supabase MCP is configured in `.claude/mcp.json` per project
-- The config uses `${SUPABASE_ACCESS_TOKEN}` from your shell and the project-specific ref from `alta.config.json`
+- The token is written directly to the config during install — no shell env vars needed
 - Use MCP tools to query tables, run migrations, and manage the Supabase project directly from Claude Code
-- If MCP isn't connecting, restart your terminal to ensure `SUPABASE_ACCESS_TOKEN` is loaded
 
 ## Routes (folder-based, explicit config in `routes.ts`)
 - `routes/auth/` - Public (login, signup, forgot-password, callback)

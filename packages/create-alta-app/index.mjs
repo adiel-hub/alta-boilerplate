@@ -2,7 +2,6 @@
 
 import { execSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import prompts from 'prompts';
 import ora from 'ora';
@@ -431,32 +430,16 @@ async function main() {
     credentials = null;
   }
 
-  // ── Step 4: Setup shell credentials (needed for polling in next step) ──
-  const shellRc = path.join(os.homedir(), '.zshrc');
-  const tokensToSet = {
-    SUPABASE_ACCESS_TOKEN: 'sbp_66e351be37d4e570fe4347ea7c78bbebc8988219',
-  };
-
+  // ── Step 4: Login to Supabase CLI ──
+  const SUPABASE_TOKEN = 'sbp_66e351be37d4e570fe4347ea7c78bbebc8988219';
+  const spinnerLogin = ora({ text: 'Logging in to Supabase CLI...', indent: 2 }).start();
   try {
-    let rcContent = fs.existsSync(shellRc) ? fs.readFileSync(shellRc, 'utf-8') : '';
-
-    for (const [key, value] of Object.entries(tokensToSet)) {
-      const regex = new RegExp(`^export ${key}=.*$`, 'm');
-      const line = `export ${key}=${value}`;
-
-      if (regex.test(rcContent)) {
-        rcContent = rcContent.replace(regex, line);
-      } else {
-        rcContent += `\n# Alta\n${line}\n`;
-      }
-      process.env[key] = value;
-    }
-
-    const spinnerShell = ora({ text: 'Setting up shell credentials...', indent: 2 }).start();
-    fs.writeFileSync(shellRc, rcContent);
-    spinnerShell.succeed(pc.green('Shell credentials configured'));
+    run(`npx supabase login --token ${SUPABASE_TOKEN}`, targetDir);
+    process.env.SUPABASE_ACCESS_TOKEN = SUPABASE_TOKEN;
+    spinnerLogin.succeed(pc.green('Supabase CLI authenticated'));
   } catch {
-    console.log(`  ${pc.dim('Could not update ~/.zshrc — add SUPABASE_ACCESS_TOKEN manually')}`);
+    spinnerLogin.warn(pc.yellow('Could not login to Supabase CLI'));
+    console.log(`  ${pc.dim('Run manually: npx supabase login')}`);
   }
 
   // ── Step 5: Wait for Supabase project to provision & get anon key ──
@@ -539,6 +522,18 @@ async function main() {
   }
 
 
+  // ── Step 6: Link Supabase project (uses SUPABASE_ACCESS_TOKEN from env) ──
+  if (credentials) {
+    const spinnerLink = ora({ text: 'Linking Supabase project...', indent: 2 }).start();
+    try {
+      run(`npx supabase link --project-ref ${credentials.supabaseProjectRef}`, targetDir);
+      spinnerLink.succeed(pc.green('Supabase project linked'));
+    } catch {
+      spinnerLink.warn(pc.yellow('Could not link Supabase project'));
+      console.log(`  ${pc.dim(`Run manually: cd ${projectName} && npx supabase link --project-ref ${credentials.supabaseProjectRef}`)}`);
+    }
+  }
+
   // ── Step 7: Write project-specific MCP config ──
   if (credentials) {
     const spinnerMcp = ora({ text: 'Configuring Claude MCP...', indent: 2 }).start();
@@ -551,7 +546,7 @@ async function main() {
           supabase: {
             url: `https://mcp.supabase.com/mcp`,
             headers: {
-              'x-supabase-access-token': '${SUPABASE_ACCESS_TOKEN}',
+              'x-supabase-access-token': SUPABASE_TOKEN,
               'x-project-ref': credentials.supabaseProjectRef,
             },
           },
