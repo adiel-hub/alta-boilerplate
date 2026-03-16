@@ -122,6 +122,15 @@ Shared API keys (Anthropic, Cursor, Lovable, etc.) are automatically set as Supa
 - The token is written directly to the config during install — no shell env vars needed
 - Use MCP tools to query tables, run migrations, and manage the Supabase project directly from Claude Code
 
+## Claude Skills (installed automatically)
+The following skills are installed during project setup and provide best-practice guidance:
+- **supabase-postgres-best-practices** — Follow Supabase and Postgres patterns for schema design, RLS policies, migrations, and queries
+- **vercel-react-best-practices** — Follow Vercel and React patterns for routing, data fetching, and deployment
+- **web-design-guidelines** — Follow web design principles for layout, spacing, typography, and responsiveness
+- **frontend-design** — Follow frontend design patterns for component architecture, accessibility, and UX
+
+Always follow the guidance from these skills when building features, writing migrations, or designing UI.
+
 ## Routes (folder-based, explicit config in `routes.ts`)
 - `routes/auth/` - Public (login, signup, forgot-password, callback)
 - `routes/app/` - Protected (dashboard, settings)
