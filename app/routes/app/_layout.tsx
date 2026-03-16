@@ -1,5 +1,5 @@
 import { Navigate, Outlet } from 'react-router';
-import { Spinner } from '@altahq/design-system/components/ui/spinner';
+import { Spinner } from '@alta/design-system/components/ui/spinner';
 import { useAuth } from '~/providers/auth-provider';
 import { AppSidebar } from '~/components/layout/sidebar';
 import { Header } from '~/components/layout/header';

@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { Button } from '@altahq/design-system/components/ui/button';
-import { Input } from '@altahq/design-system/components/ui/input';
-import { Label } from '@altahq/design-system/components/ui/label';
-import { Text } from '@altahq/design-system/components/ui/text';
-import { Alert, AlertDescription } from '@altahq/design-system/components/ui/alert';
-import { Spinner } from '@altahq/design-system/components/ui/spinner';
+import { Button } from '@alta/design-system/components/ui/button';
+import { Input } from '@alta/design-system/components/ui/input';
+import { Label } from '@alta/design-system/components/ui/label';
+import { Text } from '@alta/design-system/components/ui/text';
+import { Alert, AlertDescription } from '@alta/design-system/components/ui/alert';
+import { Spinner } from '@alta/design-system/components/ui/spinner';
 import { getSupabaseClient } from '~/lib/supabase/client';
 
 export default function LoginRoute() {

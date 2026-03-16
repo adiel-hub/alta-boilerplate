@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { Spinner } from '@altahq/design-system/components/ui/spinner';
-import { Text } from '@altahq/design-system/components/ui/text';
+import { Spinner } from '@alta/design-system/components/ui/spinner';
+import { Text } from '@alta/design-system/components/ui/text';
 import { getSupabaseClient } from '~/lib/supabase/client';
 
 export default function AuthCallbackRoute() {

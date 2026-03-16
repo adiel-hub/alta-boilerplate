@@ -17,9 +17,9 @@
 - `supabase/` - Supabase config, migrations, edge functions
 
 ## UI Components
-- **ALWAYS use `@altahq/design-system` first** for buttons, inputs, colors, typography, and all UI components
+- **ALWAYS use `@alta/design-system` first** for buttons, inputs, colors, typography, and all UI components
 - Only use plain Tailwind or other components if the design system doesn't have what you need
-- Import from: `import { Button, Input, ... } from '@altahq/design-system'`
+- Import from: `import { Button, Input, ... } from '@alta/design-system'`
 
 ## Conventions
 - File naming: kebab-case

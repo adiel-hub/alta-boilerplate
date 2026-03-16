@@ -148,8 +148,8 @@ export default function Root() {
 
   fs.writeFileSync(
     path.join(appDir, 'components', 'layout', 'header.tsx'),
-    `import { Separator } from '@altahq/design-system/components/ui/separator';
-import { Text } from '@altahq/design-system/components/ui/text';
+    `import { Separator } from '@alta/design-system/components/ui/separator';
+import { Text } from '@alta/design-system/components/ui/text';
 
 export function Header() {
   return (
@@ -166,10 +166,10 @@ export function Header() {
 
   fs.writeFileSync(
     path.join(appDir, 'routes', 'app', 'dashboard.tsx'),
-    `import { Card, CardContent, CardHeader, CardTitle } from '@altahq/design-system/components/ui/card';
-import { Text } from '@altahq/design-system/components/ui/text';
-import { Badge } from '@altahq/design-system/components/ui/badge';
-import { Separator } from '@altahq/design-system/components/ui/separator';
+    `import { Card, CardContent, CardHeader, CardTitle } from '@alta/design-system/components/ui/card';
+import { Text } from '@alta/design-system/components/ui/text';
+import { Badge } from '@alta/design-system/components/ui/badge';
+import { Separator } from '@alta/design-system/components/ui/separator';
 
 export default function DashboardRoute() {
   return (
@@ -217,8 +217,8 @@ export default function DashboardRoute() {
 
   fs.writeFileSync(
     path.join(appDir, 'routes', 'app', 'settings.tsx'),
-    `import { Card, CardContent, CardHeader, CardTitle } from '@altahq/design-system/components/ui/card';
-import { Text } from '@altahq/design-system/components/ui/text';
+    `import { Card, CardContent, CardHeader, CardTitle } from '@alta/design-system/components/ui/card';
+import { Text } from '@alta/design-system/components/ui/text';
 
 export default function SettingsRoute() {
   return (

@@ -1,6 +1,6 @@
 import { Outlet } from 'react-router';
-import { Card, CardContent } from '@altahq/design-system/components/ui/card';
-import { Text } from '@altahq/design-system/components/ui/text';
+import { Card, CardContent } from '@alta/design-system/components/ui/card';
+import { Text } from '@alta/design-system/components/ui/text';
 
 export default function AuthLayout() {
   return (

@@ -11,9 +11,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
-} from '@altahq/design-system/components/ui/sidebar';
-import { Text } from '@altahq/design-system/components/ui/text';
-import { Separator } from '@altahq/design-system/components/ui/separator';
+} from '@alta/design-system/components/ui/sidebar';
+import { Text } from '@alta/design-system/components/ui/text';
+import { Separator } from '@alta/design-system/components/ui/separator';
 
 const navItems = [
   {

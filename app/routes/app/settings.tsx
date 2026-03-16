@@ -1,10 +1,10 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@altahq/design-system/components/ui/card';
-import { Label } from '@altahq/design-system/components/ui/label';
-import { Input } from '@altahq/design-system/components/ui/input';
-import { Text } from '@altahq/design-system/components/ui/text';
-import { Separator } from '@altahq/design-system/components/ui/separator';
-import { Avatar, AvatarFallback } from '@altahq/design-system/components/ui/avatar';
-import { Badge } from '@altahq/design-system/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@alta/design-system/components/ui/card';
+import { Label } from '@alta/design-system/components/ui/label';
+import { Input } from '@alta/design-system/components/ui/input';
+import { Text } from '@alta/design-system/components/ui/text';
+import { Separator } from '@alta/design-system/components/ui/separator';
+import { Avatar, AvatarFallback } from '@alta/design-system/components/ui/avatar';
+import { Badge } from '@alta/design-system/components/ui/badge';
 import { useAuth } from '~/providers/auth-provider';
 
 export default function SettingsRoute() {

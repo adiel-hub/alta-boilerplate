@@ -1,6 +1,6 @@
-import { Button } from '@altahq/design-system/components/ui/button';
-import { Separator } from '@altahq/design-system/components/ui/separator';
-import { Avatar, AvatarFallback } from '@altahq/design-system/components/ui/avatar';
+import { Button } from '@alta/design-system/components/ui/button';
+import { Separator } from '@alta/design-system/components/ui/separator';
+import { Avatar, AvatarFallback } from '@alta/design-system/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,7 +8,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@altahq/design-system/components/ui/dropdown-menu';
+} from '@alta/design-system/components/ui/dropdown-menu';
 import { useAuth } from '~/providers/auth-provider';
 
 export function Header() {
