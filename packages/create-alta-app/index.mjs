@@ -322,6 +322,8 @@ async function main() {
     if (fs.existsSync(packagesDir) && fs.readdirSync(packagesDir).length === 0) {
       fs.rmSync(packagesDir, { recursive: true, force: true });
     }
+    const scriptsDir = path.join(targetDir, 'scripts');
+    if (fs.existsSync(scriptsDir)) fs.rmSync(scriptsDir, { recursive: true, force: true });
 
     const rootPkgPath = path.join(targetDir, 'package.json');
     const rootPkg = JSON.parse(fs.readFileSync(rootPkgPath, 'utf-8'));
