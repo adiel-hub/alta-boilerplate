@@ -430,30 +430,18 @@ async function main() {
     credentials = null;
   }
 
-  // ── Step 4: Login to Supabase CLI ──
+  // ── Step 4: Wait for Supabase project to provision & get anon key ──
   const SUPABASE_TOKEN = 'sbp_66e351be37d4e570fe4347ea7c78bbebc8988219';
-  const spinnerLogin = ora({ text: 'Logging in to Supabase CLI...', indent: 2 }).start();
-  try {
-    run(`npx supabase login --token ${SUPABASE_TOKEN}`, targetDir);
-    process.env.SUPABASE_ACCESS_TOKEN = SUPABASE_TOKEN;
-    spinnerLogin.succeed(pc.green('Supabase CLI authenticated'));
-  } catch {
-    spinnerLogin.warn(pc.yellow('Could not login to Supabase CLI'));
-    console.log(`  ${pc.dim('Run manually: npx supabase login')}`);
-  }
-
-  // ── Step 5: Wait for Supabase project to provision & get anon key ──
   let anonKey = '';
   if (credentials) {
     const spinnerKeys = ora({ text: 'Waiting for Supabase project to provision...', indent: 2 }).start();
-    const token = process.env.SUPABASE_ACCESS_TOKEN;
     const ref = credentials.supabaseProjectRef;
 
     for (let i = 0; i < 24; i++) {
       await new Promise((r) => setTimeout(r, 5000));
       try {
         const res = await fetch(`https://api.supabase.com/v1/projects/${ref}/api-keys`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${SUPABASE_TOKEN}` },
         });
         if (res.ok) {
           const keys = await res.json();
@@ -522,15 +510,16 @@ async function main() {
   }
 
 
-  // ── Step 6: Link Supabase project (uses SUPABASE_ACCESS_TOKEN from env) ──
+  // ── Step 6: Login & link Supabase project ──
   if (credentials) {
     const spinnerLink = ora({ text: 'Linking Supabase project...', indent: 2 }).start();
     try {
+      run(`npx supabase login --token ${SUPABASE_TOKEN}`, targetDir);
       run(`npx supabase link --project-ref ${credentials.supabaseProjectRef}`, targetDir);
       spinnerLink.succeed(pc.green('Supabase project linked'));
     } catch {
       spinnerLink.warn(pc.yellow('Could not link Supabase project'));
-      console.log(`  ${pc.dim(`Run manually: cd ${projectName} && npx supabase link --project-ref ${credentials.supabaseProjectRef}`)}`);
+      console.log(`  ${pc.dim(`Run manually: npx supabase login && npx supabase link --project-ref ${credentials.supabaseProjectRef}`)}`);
     }
   }
 
