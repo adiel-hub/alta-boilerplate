@@ -543,7 +543,19 @@ async function main() {
     console.log('');
   }
 
-  // ── Step 9: Start dev server ──
+  // ── Step 9: Deploy to Vercel ──
+  if (credentials?.vercelProjectName) {
+    const spinnerDeploy = ora({ text: 'Deploying to Vercel...', indent: 2 }).start();
+    try {
+      run('pnpm deploy', targetDir);
+      spinnerDeploy.succeed(pc.green('Deployed to Vercel'));
+    } catch {
+      spinnerDeploy.warn(pc.yellow('Could not deploy to Vercel'));
+      console.log(`  ${pc.dim('Deploy manually: cd ' + projectName + ' && pnpm deploy')}`);
+    }
+  }
+
+  // ── Step 10: Start dev server ──
   console.log(`  ${pc.bold('Starting dev server...')}`);
   console.log('');
   try {
