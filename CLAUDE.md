@@ -67,10 +67,36 @@
 - Edge functions live in `supabase/functions/<function-name>/index.ts`
 - Deploy a function: `npx supabase functions deploy <function-name> --project-ref $SUPABASE_PROJECT_REF`
 - Deploy all functions: `npx supabase functions deploy --project-ref $SUPABASE_PROJECT_REF`
-- View logs: `npx supabase functions logs <function-name> --project-ref $SUPABASE_PROJECT_REF`
 - Set secrets: `npx supabase secrets set KEY=value --project-ref $SUPABASE_PROJECT_REF`
 - List secrets: `npx supabase secrets list --project-ref $SUPABASE_PROJECT_REF`
-- The `SUPABASE_PROJECT_REF` is in `.env`
+- The `SUPABASE_PROJECT_REF` comes from `alta.config.json`
+
+## Shell Credentials (~/.zshrc)
+
+The CLI installer (`create-alta-app`) adds the following to `~/.zshrc`:
+
+```bash
+# Alta
+export SUPABASE_ACCESS_TOKEN=sbp_...
+```
+
+This token is **org-level** — it grants access to all Supabase projects in the Alta org via the Management API. It's used by:
+- **Supabase CLI** — all `npx supabase` commands automatically read `$SUPABASE_ACCESS_TOKEN` from the environment (no `supabase login` needed)
+- **Claude Code MCP** — `.claude/mcp.json` references `${SUPABASE_ACCESS_TOKEN}` which Claude Code resolves from the shell environment
+
+### How Supabase CLI uses the token
+The Supabase CLI automatically picks up `SUPABASE_ACCESS_TOKEN` from the environment. No need to run `supabase login`. Examples:
+```bash
+# These all work without login — the CLI reads SUPABASE_ACCESS_TOKEN from ~/.zshrc
+npx supabase functions deploy my-function --project-ref <ref>
+npx supabase secrets list --project-ref <ref>
+npx supabase db push --project-ref <ref>
+```
+
+### Important
+- The token is set once during `npx create-alta-app` and persists across all projects
+- If Claude Code can't access Supabase MCP, make sure `SUPABASE_ACCESS_TOKEN` is exported in your shell (restart terminal after first install)
+- **Never commit this token** — it lives only in `~/.zshrc`
 
 ## Project Config (zero-env architecture)
 
@@ -81,12 +107,11 @@ This project uses **no `.env` files**. All config is in `alta.config.json` (comm
 | `supabaseProjectRef` | Supabase project ID — used by DB commands, edge function deploys |
 | `supabaseUrl` | Supabase project URL — used by the app |
 | `supabaseAnonKey` | Supabase anon/public key — used by the app (safe to commit) |
-| `databaseUrl` | Full Postgres connection string — used by `db:push`, `db:gen-types` |
 | `vercelProjectName` | Vercel project name |
 | `vercelUrl` | Vercel production URL |
 
 ### Shared secrets (API keys)
-Shared API keys (Anthropic, Cursor, Lovable, etc.) are stored centrally in the admin Supabase project and fetched at runtime — like AWS Secrets Manager. Edge functions access them via the `/get-secrets` endpoint. **Never hardcode API keys in code or config files.**
+Shared API keys (Anthropic, Cursor, Lovable, etc.) are automatically set as Supabase project secrets during project creation. Edge functions access them via `Deno.env.get('KEY_NAME')`. **Never hardcode API keys in code or config files.**
 
 ### Vercel env vars (set automatically during project creation)
 | Variable | Purpose |
@@ -94,9 +119,15 @@ Shared API keys (Anthropic, Cursor, Lovable, etc.) are stored centrally in the a
 | `VITE_SUPABASE_URL` | Supabase URL — used at build time |
 | `VITE_SUPABASE_ANON_KEY` | Supabase anon key — used at build time |
 
+### Deploys
+- **Vercel**: Auto-deploys on every push to GitHub — no local Vercel token needed
+- **Edge functions**: Auto-deploy via GitHub Action when `supabase/functions/` changes
+
 ## MCP
-- Supabase MCP is configured in `.claude/mcp.json`
-- Use MCP tools to query, migrate, and manage the Supabase project directly from Claude Code
+- Supabase MCP is configured in `.claude/mcp.json` per project
+- The config uses `${SUPABASE_ACCESS_TOKEN}` from your shell and the project-specific ref from `alta.config.json`
+- Use MCP tools to query tables, run migrations, and manage the Supabase project directly from Claude Code
+- If MCP isn't connecting, restart your terminal to ensure `SUPABASE_ACCESS_TOKEN` is loaded
 
 ## Routes (folder-based, explicit config in `routes.ts`)
 - `routes/auth/` - Public (login, signup, forgot-password, callback)
