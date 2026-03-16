@@ -479,6 +479,10 @@ async function main() {
         lines.push(`export ${key}=${value}`);
       }
       fs.appendFileSync(shellRc, lines.join('\n') + '\n');
+      // Also set in current process so subsequent steps (deploy, db:push) work
+      for (const [key, value] of missing) {
+        process.env[key] = value;
+      }
       spinnerShell.succeed(pc.green('Shell credentials configured'));
     }
   } catch {
@@ -547,7 +551,7 @@ async function main() {
   if (credentials?.vercelProjectName) {
     const spinnerDeploy = ora({ text: 'Deploying to Vercel...', indent: 2 }).start();
     try {
-      run('pnpm deploy', targetDir);
+      run('pnpm run deploy', targetDir);
       spinnerDeploy.succeed(pc.green('Deployed to Vercel'));
     } catch {
       spinnerDeploy.warn(pc.yellow('Could not deploy to Vercel'));

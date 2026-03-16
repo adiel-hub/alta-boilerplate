@@ -39,14 +39,14 @@
 - `pnpm format:check` - Check formatting
 
 ### Vercel Deployment
-- `pnpm deploy` - **Preview deploy** (gives a unique preview URL to test)
-- `pnpm deploy:prod` - **Production deploy** (updates the live site)
+- `pnpm run deploy` - **Preview deploy** (gives a unique preview URL to test)
+- `pnpm run deploy:prod` - **Production deploy** (updates the live site)
 - Preview deploys are created per push — each gets a unique URL like `https://project-xyz123.vercel.app`
 - Production deploy updates `https://<project-name>.vercel.app`
-- **ONLY run `pnpm deploy:prod` when the user explicitly asks** (e.g. "deploy to production", "go live")
+- **ONLY run `pnpm run deploy:prod` when the user explicitly asks** (e.g. "deploy to production", "go live")
 - After making code changes, **always commit, push, and deploy a preview**:
   ```
-  git add -A && git commit -m "description" && git push && pnpm deploy
+  git add -A && git commit -m "description" && git push && pnpm run deploy
   ```
 - Auto-deploy is also set up: every push to GitHub triggers a Vercel deploy automatically
 
@@ -97,6 +97,13 @@ npx supabase db push --project-ref <ref>
 - The token is set once during `npx create-alta-app` and persists across all projects
 - If Claude Code can't access Supabase MCP, make sure `SUPABASE_ACCESS_TOKEN` is exported in your shell (restart terminal after first install)
 - **Never commit this token** — it lives only in `~/.zshrc`
+
+### Troubleshooting: "Access token not provided"
+If Supabase CLI commands fail with "Access token not provided" after a fresh install:
+1. The installer writes `SUPABASE_ACCESS_TOKEN` to `~/.zshrc`, but your current terminal session won't have it until you reload
+2. Run `source ~/.zshrc` in your terminal, or restart the terminal
+3. Verify with `echo $SUPABASE_ACCESS_TOKEN` — it should print the token
+4. As a one-time fallback you can run `npx supabase link --project-ref <ref>` to authenticate the project directly
 
 ## Project Config (zero-env architecture)
 
