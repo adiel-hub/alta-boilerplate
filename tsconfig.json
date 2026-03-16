@@ -15,7 +15,8 @@
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "types": ["vite/client"],
     "paths": {
-      "~/*": ["./app/*"]
+      "~/*": ["./app/*"],
+      "@alta/design-system/*": ["../../../libs/frontend/design-system/src/*"]
     },
     "rootDirs": [".", ".react-router/types"]
   },

@@ -1,4 +1,4 @@
-@import '@alta/design-system/styles/styles.css';
+@import '../../../../../libs/frontend/design-system/src/styles/styles.css';
 
 @theme inline {
   --radius: 13px;

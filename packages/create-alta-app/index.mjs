@@ -351,20 +351,15 @@ async function main() {
           },
         },
         serve: {
-          executor: '@nx/vite:dev-server',
+          executor: 'nx:run-commands',
           defaultConfiguration: 'development',
           options: {
-            buildTarget: `${projectName}:build`,
+            command: 'npx react-router dev',
+            cwd: `apps/ai-engineer/${projectName}`,
           },
           configurations: {
-            development: {
-              buildTarget: `${projectName}:build:development`,
-              hmr: true,
-            },
-            production: {
-              buildTarget: `${projectName}:build:production`,
-              hmr: false,
-            },
+            development: {},
+            production: {},
           },
         },
         preview: {
