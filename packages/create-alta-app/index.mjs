@@ -448,7 +448,7 @@ async function main() {
   }
 
 
-  // ── Step 6: Login & link Supabase + Vercel ──
+  // ── Step 6: Login & link Supabase ──
   if (credentials) {
     const spinnerLink = ora({ text: 'Linking Supabase project...', indent: 2 }).start();
     try {
@@ -459,33 +459,27 @@ async function main() {
       spinnerLink.warn(pc.yellow('Could not link Supabase project'));
       console.log(`  ${pc.dim(`Run manually: npx supabase login && npx supabase link --project-ref ${credentials.supabaseProjectRef}`)}`);
     }
+  }
 
-    const spinnerVercel = ora({ text: 'Authenticating Vercel CLI...', indent: 2 }).start();
-    try {
-      // Persist Vercel auth globally so user doesn't need --token on every command
-      const vercelConfigDir = path.join(process.env.HOME, 'Library', 'Application Support', 'com.vercel.cli');
-      if (!fs.existsSync(vercelConfigDir)) fs.mkdirSync(vercelConfigDir, { recursive: true });
-
-      fs.writeFileSync(
-        path.join(vercelConfigDir, 'auth.json'),
-        JSON.stringify({ token: credentials.vercelToken }) + '\n'
-      );
-
-      // Set current team scope
-      const configPath = path.join(vercelConfigDir, 'config.json');
-      let vercelConfig = {};
-      if (fs.existsSync(configPath)) {
-        vercelConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+  // ── Step 6b: Login & link Vercel ──
+  if (credentials) {
+    // Check if already logged in to Vercel
+    if (!canRun('npx vercel whoami')) {
+      console.log(`\n  ${pc.cyan('Vercel login required — opening browser...')}\n`);
+      try {
+        execSync('npx vercel login', { cwd: targetDir, stdio: 'inherit' });
+      } catch {
+        console.log(`  ${pc.dim('Vercel login skipped — run "vercel login" later to enable deploys')}`);
       }
-      vercelConfig.currentTeam = credentials.vercelTeamId;
-      fs.writeFileSync(configPath, JSON.stringify(vercelConfig, null, 2) + '\n');
+    }
 
-      // Link the project to Vercel
+    const spinnerVercel = ora({ text: 'Linking Vercel project...', indent: 2 }).start();
+    try {
       run(`npx vercel link --project ${projectName} --yes`, targetDir);
-      spinnerVercel.succeed(pc.green('Vercel authenticated & project linked'));
+      spinnerVercel.succeed(pc.green('Vercel project linked'));
     } catch {
       spinnerVercel.warn(pc.yellow('Could not link Vercel project'));
-      console.log(`  ${pc.dim('Deploy manually: cd ' + projectName + ' && pnpm run deploy')}`);
+      console.log(`  ${pc.dim('Run manually: vercel link --project ' + projectName)}`);
     }
   }
 

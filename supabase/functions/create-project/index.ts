@@ -133,8 +133,6 @@ Deno.serve(async (req) => {
         databaseUrl,
         vercelUrl: vercelProjectUrl,
         vercelProjectId,
-        vercelToken: VERCEL_TOKEN,
-        vercelTeamId: VERCEL_TEAM_ID,
         dbPassword,
       },
       { headers: corsHeaders }

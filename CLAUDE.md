@@ -113,9 +113,17 @@ Shared API keys (Anthropic, Cursor, Lovable, etc.) are automatically set as Supa
 | `VITE_SUPABASE_URL` | Supabase URL — used at build time |
 | `VITE_SUPABASE_ANON_KEY` | Supabase anon key — used at build time |
 
+### Vercel Authentication
+The installer prompts the user to `vercel login` (opens browser) if not already authenticated, then runs `vercel link` to connect the project. After that, all Vercel CLI commands (`vercel deploy`, `vercel env pull`, etc.) just work.
+
+If Vercel CLI commands fail with "No credentials found":
+```bash
+vercel login
+```
+
 ### Deploys
-- **Vercel**: Auto-deploys on every push to GitHub — no local Vercel token needed
-- **Edge functions**: Auto-deploy via GitHub Action when `supabase/functions/` changes
+- **Vercel**: Auto-deploys on every push to GitHub. Manual deploy: `pnpm run deploy` (preview) or `pnpm run deploy:prod` (production)
+- **Edge functions**: Deploy via `npx supabase functions deploy <name> --linked`
 
 ## MCP
 - Supabase MCP is configured in `.claude/mcp.json` per project
