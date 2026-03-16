@@ -82,7 +82,31 @@ Deno.serve(async (req) => {
     // Build database URL for local development
     const databaseUrl = `postgresql://postgres.${projectRef}:${dbPassword}@aws-0-us-east-1.pooler.supabase.com:6543/postgres`;
 
-    // ── 2. Set shared secrets on the new project ──
+    // ── 2. Disable email confirmation ──
+    console.log('Disabling email confirmation...');
+    try {
+      const authRes = await fetch(
+        `https://api.supabase.com/v1/projects/${projectRef}/config/auth`,
+        {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${SUPABASE_ACCESS_TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ MAILER_AUTOCONFIRM: true }),
+        }
+      );
+      if (authRes.ok) {
+        console.log('Email confirmation disabled');
+      } else {
+        const err = await authRes.text();
+        console.error(`Failed to disable email confirmation: ${err}`);
+      }
+    } catch (err) {
+      console.error(`Auth config error: ${err}`);
+    }
+
+    // ── 3. Set shared secrets on the new project ──
     console.log('Setting shared secrets on new project...');
     try {
       // Fetch shared secrets from admin Supabase

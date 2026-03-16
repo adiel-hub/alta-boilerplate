@@ -313,7 +313,7 @@ async function main() {
   // ── Step 1: Clone template ──
   const spinnerClone = ora({ text: 'Downloading template...', indent: 2 }).start();
   try {
-    run(`npx --yes degit ${TEMPLATE_REPO}#${BRANCH} "${projectName}"`, process.cwd());
+    run(`npx --yes degit ${TEMPLATE_REPO}#${BRANCH} "${targetDir}"`, process.cwd());
 
     const cliDir = path.join(targetDir, 'packages', 'create-alta-app');
     if (fs.existsSync(cliDir)) fs.rmSync(cliDir, { recursive: true, force: true });
