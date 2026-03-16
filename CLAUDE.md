@@ -72,56 +72,27 @@
 - List secrets: `npx supabase secrets list --project-ref $SUPABASE_PROJECT_REF`
 - The `SUPABASE_PROJECT_REF` is in `.env`
 
-## Environment Variables
+## Project Config (zero-env architecture)
 
-### `.env` (root, gitignored) — App runtime + DB credentials
-| Variable | Purpose | Used by |
-|---|---|---|
-| `VITE_SUPABASE_URL` | Supabase project URL | App (browser, via Vite) |
-| `VITE_SUPABASE_ANON_KEY` | Supabase anon/public key | App (browser, via Vite) |
-| `SUPABASE_PROJECT_REF` | Project reference ID | DB commands, edge function deploys |
-| `SUPABASE_DB_PASSWORD` | Database password | Reference only |
-| `DATABASE_URL` | Full Postgres connection string | `db:push`, `db:diff`, `db:gen-types` |
-| `GITHUB_TOKEN` | GitHub PAT for push access | Git remote (embedded in origin URL) |
-| `GITHUB_REPO` | GitHub org/repo (e.g. `adiel-hub/my-app`) | Reference, remote URL reconstruction |
-| `VERCEL_URL` | Vercel production URL | Reference |
-| `SUPABASE_DASHBOARD` | Supabase dashboard link | Reference |
+This project uses **no `.env` files**. All config is in `alta.config.json` (committed to git):
+
+| Field | Purpose |
+|---|---|
+| `supabaseProjectRef` | Supabase project ID — used by DB commands, edge function deploys |
+| `supabaseUrl` | Supabase project URL — used by the app |
+| `supabaseAnonKey` | Supabase anon/public key — used by the app (safe to commit) |
+| `databaseUrl` | Full Postgres connection string — used by `db:push`, `db:gen-types` |
+| `vercelProjectName` | Vercel project name |
+| `vercelUrl` | Vercel production URL |
+
+### Shared secrets (API keys)
+Shared API keys (Anthropic, Cursor, Lovable, etc.) are stored centrally in the admin Supabase project and fetched at runtime — like AWS Secrets Manager. Edge functions access them via the `/get-secrets` endpoint. **Never hardcode API keys in code or config files.**
 
 ### Vercel env vars (set automatically during project creation)
 | Variable | Purpose |
 |---|---|
-| `VITE_SUPABASE_URL` | Same as local — used at build time |
-| `VITE_SUPABASE_ANON_KEY` | Same as local — used at build time |
-
-These are set on the Vercel project for all environments (production, preview, development).
-To update them: `vercel env add VITE_SUPABASE_URL` or via the Vercel dashboard.
-
-### `supabase/.env.local` (gitignored) — Admin secrets for the create-project edge function
-These are NOT needed for app development — only for the Alta CLI provisioning service.
-
-## Git & GitHub
-
-This project is pre-configured with a GitHub remote that includes authentication. You can push immediately without any GitHub setup:
-
-```bash
-git add -A && git commit -m "your message" && git push
-```
-
-- The remote URL has an embedded access token — no SSH keys or GitHub login needed
-- The remote points to a private repo under the `adiel-hub` GitHub org
-- **Never share or log the remote URL** — it contains a secret token
-- To check the remote: `git remote -v`
-- The token grants push access to this specific repo
-- If the remote stops working (e.g. token rotated), re-set it using the `GITHUB_TOKEN` from `.env`:
-  ```bash
-  git remote set-url origin https://$GITHUB_TOKEN@github.com/$GITHUB_REPO.git
-  ```
-
-### Typical workflow
-1. Make changes
-2. Commit and push: `git add -A && git commit -m "description" && git push`
-3. Preview deploy: `pnpm deploy` (or auto-deploys on push via Vercel)
-4. Production deploy: `pnpm deploy:prod` (only when explicitly asked)
+| `VITE_SUPABASE_URL` | Supabase URL — used at build time |
+| `VITE_SUPABASE_ANON_KEY` | Supabase anon key — used at build time |
 
 ## MCP
 - Supabase MCP is configured in `.claude/mcp.json`

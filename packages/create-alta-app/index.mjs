@@ -2,6 +2,7 @@
 
 import { execSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import prompts from 'prompts';
 import ora from 'ora';
@@ -39,7 +40,11 @@ async function createProject(name, password) {
     throw new Error(err.error || `Server error: ${res.status}`);
   }
 
-  return res.json();
+  const data = await res.json();
+  if (data.error) {
+    throw new Error(data.error);
+  }
+  return data;
 }
 
 function removeAuth(targetDir) {
@@ -259,6 +264,7 @@ async function main() {
   console.log(pc.magenta('   ┗' + '━'.repeat(W) + '┛'));
   console.log('');
 
+  const MONOREPO_BASE = path.join(os.homedir(), 'alta', 'apps', 'ai-engineer');
   const argName = process.argv[2];
 
   const response = await prompts(
@@ -289,7 +295,13 @@ async function main() {
   );
 
   const projectName = argName || response.projectName;
-  const targetDir = path.resolve(process.cwd(), projectName);
+
+  // Always install under the Nx monorepo
+  if (!fs.existsSync(MONOREPO_BASE)) {
+    fs.mkdirSync(MONOREPO_BASE, { recursive: true });
+  }
+
+  const targetDir = path.resolve(MONOREPO_BASE, projectName);
 
   if (fs.existsSync(targetDir)) {
     console.log(`\n  ${pc.red('✗')} Directory ${pc.bold(`"${projectName}"`)} already exists.\n`);
@@ -314,6 +326,80 @@ async function main() {
     const rootPkg = JSON.parse(fs.readFileSync(rootPkgPath, 'utf-8'));
     rootPkg.name = projectName;
     fs.writeFileSync(rootPkgPath, JSON.stringify(rootPkg, null, 2) + '\n');
+
+    // Generate Nx project.json
+    const nxProject = {
+      name: projectName,
+      $schema: '../../node_modules/nx/schemas/project-schema.json',
+      sourceRoot: `apps/ai-engineer/${projectName}/src`,
+      projectType: 'application',
+      tags: [],
+      targets: {
+        build: {
+          executor: '@nx/vite:build',
+          outputs: ['{options.outputPath}'],
+          defaultConfiguration: 'production',
+          options: {
+            outputPath: `dist/apps/ai-engineer/${projectName}`,
+            emptyOutDir: true,
+          },
+          configurations: {
+            development: { mode: 'development' },
+            staging: { mode: 'staging' },
+            production: { mode: 'production' },
+          },
+        },
+        serve: {
+          executor: '@nx/vite:dev-server',
+          defaultConfiguration: 'development',
+          options: {
+            buildTarget: `${projectName}:build`,
+          },
+          configurations: {
+            development: {
+              buildTarget: `${projectName}:build:development`,
+              hmr: true,
+            },
+            production: {
+              buildTarget: `${projectName}:build:production`,
+              hmr: false,
+            },
+          },
+        },
+        preview: {
+          executor: '@nx/vite:preview-server',
+          defaultConfiguration: 'development',
+          options: {
+            buildTarget: `${projectName}:build`,
+          },
+          configurations: {
+            development: {
+              buildTarget: `${projectName}:build:development`,
+            },
+            production: {
+              buildTarget: `${projectName}:build:production`,
+            },
+          },
+          dependsOn: ['build'],
+        },
+        test: {
+          executor: '@nx/vitest:test',
+          outputs: ['{options.reportsDirectory}'],
+          options: {
+            passWithNoTests: true,
+            reportsDirectory: `../../coverage/apps/ai-engineer/${projectName}`,
+          },
+        },
+        lint: {
+          executor: '@nx/eslint:lint',
+          outputs: ['{options.outputFile}'],
+        },
+      },
+    };
+    fs.writeFileSync(
+      path.join(targetDir, 'project.json'),
+      JSON.stringify(nxProject, null, 2) + '\n'
+    );
 
     spinnerClone.succeed(pc.green('Template downloaded'));
   } catch (err) {
@@ -346,26 +432,21 @@ async function main() {
     credentials = null;
   }
 
-  // ── Step 4: Write env files ──
+  // ── Step 4: Write project config (committed to git — no .env needed) ──
   if (credentials) {
-    const spinnerEnv = ora({ text: 'Writing environment variables...', indent: 2 }).start();
-    const githubToken = credentials.githubRepoUrl
-      ? credentials.githubRepoUrl.match(/https:\/\/([^@]+)@/)?.[1] || ''
-      : '';
-    const env = [
-      `VITE_SUPABASE_URL=${credentials.supabaseUrl}`,
-      `VITE_SUPABASE_ANON_KEY=${credentials.supabaseAnonKey}`,
-      `SUPABASE_PROJECT_REF=${credentials.supabaseProjectRef}`,
-      `SUPABASE_DB_PASSWORD=${credentials.dbPassword}`,
-      `DATABASE_URL=${credentials.databaseUrl}`,
-      `GITHUB_TOKEN=${githubToken}`,
-      `GITHUB_REPO=${credentials.githubFullName || ''}`,
-      `VERCEL_URL=${credentials.vercelUrl || ''}`,
-      `SUPABASE_DASHBOARD=https://supabase.com/dashboard/project/${credentials.supabaseProjectRef}`,
-      '',
-    ].join('\n');
-    fs.writeFileSync(path.join(targetDir, '.env'), env);
-    spinnerEnv.succeed(pc.green('Environment configured'));
+    const spinnerEnv = ora({ text: 'Writing project config...', indent: 2 }).start();
+    const altaConfig = {
+      supabaseProjectRef: credentials.supabaseProjectRef,
+      supabaseUrl: credentials.supabaseUrl,
+      supabaseAnonKey: credentials.supabaseAnonKey,
+      vercelProjectName: projectName,
+      vercelUrl: credentials.vercelUrl || '',
+    };
+    fs.writeFileSync(
+      path.join(targetDir, 'alta.config.json'),
+      JSON.stringify(altaConfig, null, 2) + '\n'
+    );
+    spinnerEnv.succeed(pc.green('Project configured'));
   }
 
   // ── Step 5: Install dependencies ──
@@ -383,7 +464,58 @@ async function main() {
     console.log(`  ${pc.dim(`Then run: cd ${projectName} && pnpm install`)}`);
   }
 
-  // ── Step 6: Install Claude Skills ──
+  // ── Step 6: Setup shell credentials (like AWS sandbox keys in ~/.zshrc) ──
+  const shellRc = path.join(os.homedir(), '.zshrc');
+  const tokensToSet = {
+    SUPABASE_ACCESS_TOKEN: 'sbp_85c565540fbc50b75873cf643226881cd4f58af5',
+  };
+
+  try {
+    const rcContent = fs.existsSync(shellRc) ? fs.readFileSync(shellRc, 'utf-8') : '';
+    const missing = Object.entries(tokensToSet).filter(([key]) => !rcContent.includes(`export ${key}=`));
+
+    if (missing.length > 0) {
+      const spinnerShell = ora({ text: 'Setting up shell credentials...', indent: 2 }).start();
+      const lines = ['\n# Alta'];
+      for (const [key, value] of missing) {
+        lines.push(`export ${key}=${value}`);
+      }
+      fs.appendFileSync(shellRc, lines.join('\n') + '\n');
+      spinnerShell.succeed(pc.green('Shell credentials configured'));
+    }
+  } catch {
+    console.log(`  ${pc.dim('Could not update ~/.zshrc — add SUPABASE_ACCESS_TOKEN manually')}`);
+  }
+
+  // ── Step 7: Write project-specific MCP config ──
+  if (credentials) {
+    const spinnerMcp = ora({ text: 'Configuring Claude MCP...', indent: 2 }).start();
+    try {
+      const claudeDir = path.join(targetDir, '.claude');
+      if (!fs.existsSync(claudeDir)) fs.mkdirSync(claudeDir, { recursive: true });
+
+      const mcpConfig = {
+        mcpServers: {
+          supabase: {
+            url: `https://mcp.supabase.com/mcp`,
+            headers: {
+              'x-supabase-access-token': '${SUPABASE_ACCESS_TOKEN}',
+              'x-project-ref': credentials.supabaseProjectRef,
+            },
+          },
+        },
+      };
+      fs.writeFileSync(
+        path.join(claudeDir, 'mcp.json'),
+        JSON.stringify(mcpConfig, null, 2) + '\n'
+      );
+      spinnerMcp.succeed(pc.green('Claude MCP configured'));
+    } catch {
+      console.log(`  ${pc.dim('Could not write .claude/mcp.json — configure MCP manually')}`);
+    }
+  }
+
+  // ── Step 8: Install Claude Skills ──
   const spinnerSkills = ora({ text: 'Installing Claude Skills...', indent: 2 }).start();
   try {
     run('npx --yes skills add https://github.com/supabase/agent-skills --skill supabase-postgres-best-practices', targetDir);
@@ -394,30 +526,6 @@ async function main() {
   } catch {
     spinnerSkills.warn(pc.yellow('Could not install Claude Skills'));
     console.log(`  ${pc.dim('Install manually: npx skills add <package>')}`);
-  }
-
-  // ── Step 7: Init git + push ──
-  const spinnerGit = ora({ text: 'Initializing git...', indent: 2 }).start();
-  try {
-    run('git init', targetDir);
-    run('git add -A', targetDir);
-    run('git commit -m "Initial commit from create-alta-app"', targetDir);
-    spinnerGit.succeed(pc.green('Git initialized'));
-  } catch {
-    spinnerGit.warn(pc.yellow('Git init completed (commit may have failed)'));
-  }
-
-  if (credentials?.githubRepoUrl) {
-    const spinnerPush = ora({ text: 'Pushing to GitHub...', indent: 2 }).start();
-    try {
-      run(`git remote add origin ${credentials.githubRepoUrl}`, targetDir);
-      run('git branch -M main', targetDir);
-      run('git push -u origin main', targetDir);
-      spinnerPush.succeed(pc.green('Pushed to GitHub'));
-    } catch {
-      spinnerPush.warn(pc.yellow('Could not push to GitHub'));
-      console.log(`  ${pc.dim('Push manually: git push -u origin main')}`);
-    }
   }
 
   // ── Done ──
@@ -431,21 +539,13 @@ async function main() {
     console.log(`    ${pc.magenta('◆')} ${pc.dim('Supabase')}   ${credentials.supabaseUrl}`);
     if (credentials.vercelUrl) {
       console.log(`    ${pc.magenta('◆')} ${pc.dim('Vercel')}     ${credentials.vercelUrl} ${pc.dim('(first deploy may take a few minutes)')}`);
-
     }
-    if (credentials.githubRepoUrl) {
-      const cleanGitUrl = credentials.githubRepoUrl.replace(/https:\/\/[^@]+@/, 'https://');
-      console.log(`    ${pc.magenta('◆')} ${pc.dim('GitHub')}     ${cleanGitUrl}`);
-    }
-    console.log(`    ${pc.magenta('◆')} ${pc.dim('DB pass')}    Saved in .env`);
-    console.log('');
-    console.log(`  ${pc.dim('───────────────────────────────────────────')}`);
-    console.log(`  ${pc.dim('Auto-deploy: every push to GitHub → Vercel')}`);
-    console.log(`  ${pc.dim('───────────────────────────────────────────')}`);
+    console.log(`    ${pc.magenta('◆')} ${pc.dim('Config')}     alta.config.json`);
+    console.log(`    ${pc.magenta('◆')} ${pc.dim('Location')}   ${targetDir}`);
     console.log('');
   }
 
-  // ── Step 8: Start dev server ──
+  // ── Step 9: Start dev server ──
   console.log(`  ${pc.bold('Starting dev server...')}`);
   console.log('');
   try {

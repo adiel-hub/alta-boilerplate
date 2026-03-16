@@ -4,8 +4,7 @@ const SUPABASE_ACCESS_TOKEN = Deno.env.get('ADMIN_SUPABASE_ACCESS_TOKEN')!;
 const SUPABASE_ORG_ID = Deno.env.get('ADMIN_SUPABASE_ORG_ID')!;
 const VERCEL_TOKEN = Deno.env.get('ADMIN_VERCEL_TOKEN')!;
 const VERCEL_TEAM_ID = Deno.env.get('ADMIN_VERCEL_TEAM_ID') || '';
-const GITHUB_TOKEN = Deno.env.get('ADMIN_GITHUB_TOKEN')!;
-const GITHUB_ORG = Deno.env.get('ADMIN_GITHUB_ORG') || '';
+const GITHUB_REPO = Deno.env.get('ADMIN_GITHUB_REPO') || ''; // e.g. "adiel-hub/alta"
 const PASSWORD = Deno.env.get('PASSWORD')!;
 
 Deno.serve(async (req) => {
@@ -26,40 +25,7 @@ Deno.serve(async (req) => {
   const dbPassword = crypto.randomUUID().replace(/-/g, '') + 'Aa1!';
 
   try {
-    // ── 1. Create GitHub repo ──
-    console.log(`Creating GitHub repo: ${name}`);
-
-    const ghRepoUrl = GITHUB_ORG
-      ? `https://api.github.com/orgs/${GITHUB_ORG}/repos`
-      : 'https://api.github.com/user/repos';
-
-    const ghRes = await fetch(ghRepoUrl, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${GITHUB_TOKEN}`,
-        'Content-Type': 'application/json',
-        Accept: 'application/vnd.github+json',
-      },
-      body: JSON.stringify({
-        name,
-        private: true,
-        auto_init: false,
-      }),
-    });
-
-    let githubRepoUrl = '';
-    let githubFullName = '';
-    if (ghRes.ok) {
-      const ghRepo = await ghRes.json();
-      githubRepoUrl = `https://${GITHUB_TOKEN}@github.com/${ghRepo.full_name}.git`;
-      githubFullName = ghRepo.full_name;
-      console.log(`GitHub repo created: ${githubFullName}`);
-    } else {
-      const err = await ghRes.text();
-      console.error(`GitHub repo creation failed: ${err}`);
-    }
-
-    // ── 2. Create Supabase project ──
+    // ── 1. Create Supabase project ──
     console.log(`Creating Supabase project: ${name}`);
 
     const sbRes = await fetch('https://api.supabase.com/v1/projects', {
@@ -116,7 +82,57 @@ Deno.serve(async (req) => {
     // Build database URL for local development
     const databaseUrl = `postgresql://postgres.${projectRef}:${dbPassword}@aws-0-us-east-1.pooler.supabase.com:6543/postgres`;
 
-    // ── 3. Create Vercel project + connect to GitHub ──
+    // ── 2. Set shared secrets on the new project ──
+    console.log('Setting shared secrets on new project...');
+    try {
+      // Fetch shared secrets from admin Supabase
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+      const secretsRes = await fetch(`${supabaseUrl}/rest/v1/shared_secrets?select=key,value`, {
+        headers: {
+          apikey: serviceRoleKey,
+          Authorization: `Bearer ${serviceRoleKey}`,
+        },
+      });
+
+      if (secretsRes.ok) {
+        const secretRows: { key: string; value: string }[] = await secretsRes.json();
+
+        if (secretRows.length > 0) {
+          // Set secrets on the new Supabase project via Management API
+          const secretsPayload = secretRows.map((row) => ({
+            name: row.key,
+            value: row.value,
+          }));
+
+          const setRes = await fetch(
+            `https://api.supabase.com/v1/projects/${projectRef}/secrets`,
+            {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${SUPABASE_ACCESS_TOKEN}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(secretsPayload),
+            }
+          );
+
+          if (setRes.ok) {
+            console.log(`Set ${secretRows.length} shared secrets on project`);
+          } else {
+            const err = await setRes.text();
+            console.error(`Failed to set secrets: ${err}`);
+          }
+        }
+      } else {
+        console.error('Could not fetch shared secrets');
+      }
+    } catch (err) {
+      console.error(`Shared secrets error: ${err}`);
+    }
+
+    // ── 3. Create Vercel project ──
     console.log(`Creating Vercel project: ${name}`);
 
     const vercelCreateUrl = VERCEL_TEAM_ID
@@ -128,13 +144,14 @@ Deno.serve(async (req) => {
       framework: 'vite',
       buildCommand: 'pnpm build',
       outputDirectory: 'build/client',
+      rootDirectory: `apps/ai-engineer/${name}`,
     };
 
-    // Connect GitHub repo to Vercel for auto-deploy
-    if (githubFullName) {
+    // Connect to the monorepo GitHub repo for auto-deploy
+    if (GITHUB_REPO) {
       vercelBody.gitRepository = {
         type: 'github',
-        repo: githubFullName,
+        repo: GITHUB_REPO,
       };
     }
 
@@ -152,25 +169,32 @@ Deno.serve(async (req) => {
       const vcProject = await vcRes.json();
       vercelProjectUrl = `https://${name}.vercel.app`;
 
-      // Set env vars on Vercel
+      // Set only build-time env vars on Vercel (shared secrets come from central Supabase at runtime)
+      const allTargets = ['production', 'preview', 'development'];
       const envVars = [
-        { key: 'VITE_SUPABASE_URL', value: supabaseUrl, target: ['production', 'preview', 'development'] },
-        { key: 'VITE_SUPABASE_ANON_KEY', value: anonKey, target: ['production', 'preview', 'development'] },
+        { key: 'VITE_SUPABASE_URL', value: supabaseUrl, target: allTargets, type: 'plain' },
+        { key: 'VITE_SUPABASE_ANON_KEY', value: anonKey, target: allTargets, type: 'plain' },
       ];
 
       const envUrl = VERCEL_TEAM_ID
-        ? `https://api.vercel.com/v10/projects/${vcProject.id}/env?teamId=${VERCEL_TEAM_ID}`
-        : `https://api.vercel.com/v10/projects/${vcProject.id}/env`;
+        ? `https://api.vercel.com/v10/projects/${vcProject.id}/env?teamId=${VERCEL_TEAM_ID}&upsert=true`
+        : `https://api.vercel.com/v10/projects/${vcProject.id}/env?upsert=true`;
 
-      for (const env of envVars) {
-        await fetch(envUrl, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${VERCEL_TOKEN}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ type: 'plain', ...env }),
-        });
+      // Send all env vars in a single batch request
+      const envRes = await fetch(envUrl, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${VERCEL_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(envVars),
+      });
+
+      if (!envRes.ok) {
+        const envErr = await envRes.text();
+        console.error(`Vercel env vars failed: ${envErr}`);
+      } else {
+        console.log('Vercel env vars set successfully');
       }
     } else {
       const err = await vcRes.text();
@@ -184,8 +208,6 @@ Deno.serve(async (req) => {
         supabaseProjectRef: projectRef,
         databaseUrl,
         vercelUrl: vercelProjectUrl,
-        githubRepoUrl,
-        githubFullName,
         dbPassword,
       },
       { headers: corsHeaders }

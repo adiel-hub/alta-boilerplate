@@ -6,6 +6,7 @@
     "moduleResolution": "bundler",
     "esModuleInterop": true,
     "skipLibCheck": true,
+    "resolveJsonModule": true,
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
@@ -18,5 +19,5 @@
     },
     "rootDirs": [".", ".react-router/types"]
   },
-  "include": ["app", ".react-router/types/**/*"]
+  "include": ["app", ".react-router/types/**/*", "alta.config.json"]
 }
