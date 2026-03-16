@@ -11,6 +11,7 @@ import pc from 'picocolors';
 const TEMPLATE_REPO = 'adiel-hub/alta-boilerplate';
 const BRANCH = 'main';
 const ALTA_SERVICE_URL = 'https://ikbbbmmzxeemjwzrzsmt.supabase.co/functions/v1/create-project';
+const ALTA_FINALIZE_URL = 'https://ikbbbmmzxeemjwzrzsmt.supabase.co/functions/v1/finalize-project';
 
 function run(cmd, cwd) {
   execSync(cmd, { cwd, stdio: 'ignore' });
@@ -430,13 +431,88 @@ async function main() {
     credentials = null;
   }
 
-  // ── Step 4: Write project config (committed to git — no .env needed) ──
+  // ── Step 4: Setup shell credentials (needed for polling in next step) ──
+  const shellRc = path.join(os.homedir(), '.zshrc');
+  const tokensToSet = {
+    SUPABASE_ACCESS_TOKEN: 'sbp_66e351be37d4e570fe4347ea7c78bbebc8988219',
+  };
+
+  try {
+    let rcContent = fs.existsSync(shellRc) ? fs.readFileSync(shellRc, 'utf-8') : '';
+
+    for (const [key, value] of Object.entries(tokensToSet)) {
+      const regex = new RegExp(`^export ${key}=.*$`, 'm');
+      const line = `export ${key}=${value}`;
+
+      if (regex.test(rcContent)) {
+        rcContent = rcContent.replace(regex, line);
+      } else {
+        rcContent += `\n# Alta\n${line}\n`;
+      }
+      process.env[key] = value;
+    }
+
+    const spinnerShell = ora({ text: 'Setting up shell credentials...', indent: 2 }).start();
+    fs.writeFileSync(shellRc, rcContent);
+    spinnerShell.succeed(pc.green('Shell credentials configured'));
+  } catch {
+    console.log(`  ${pc.dim('Could not update ~/.zshrc — add SUPABASE_ACCESS_TOKEN manually')}`);
+  }
+
+  // ── Step 5: Wait for Supabase project to provision & get anon key ──
+  let anonKey = '';
+  if (credentials) {
+    const spinnerKeys = ora({ text: 'Waiting for Supabase project to provision...', indent: 2 }).start();
+    const token = process.env.SUPABASE_ACCESS_TOKEN;
+    const ref = credentials.supabaseProjectRef;
+
+    for (let i = 0; i < 24; i++) {
+      await new Promise((r) => setTimeout(r, 5000));
+      try {
+        const res = await fetch(`https://api.supabase.com/v1/projects/${ref}/api-keys`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const keys = await res.json();
+          const found = keys.find((k) => k.name === 'anon');
+          if (found) {
+            anonKey = found.api_key;
+            break;
+          }
+        }
+      } catch {}
+    }
+
+    if (anonKey) {
+      spinnerKeys.succeed(pc.green('Supabase project ready'));
+
+      // Finalize: disable email confirmation, set shared secrets, set Vercel anon key
+      try {
+        await fetch(ALTA_FINALIZE_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': response.password,
+          },
+          body: JSON.stringify({
+            projectRef: ref,
+            anonKey,
+            vercelProjectId: credentials.vercelProjectId || '',
+          }),
+        });
+      } catch {}
+    } else {
+      spinnerKeys.warn(pc.yellow('Keys not ready yet — check Supabase dashboard'));
+    }
+  }
+
+  // ── Step 5: Write project config ──
   if (credentials) {
     const spinnerEnv = ora({ text: 'Writing project config...', indent: 2 }).start();
     const altaConfig = {
       supabaseProjectRef: credentials.supabaseProjectRef,
       supabaseUrl: credentials.supabaseUrl,
-      supabaseAnonKey: credentials.supabaseAnonKey,
+      supabaseAnonKey: anonKey,
       vercelProjectName: projectName,
       vercelUrl: credentials.vercelUrl || '',
     };
@@ -462,37 +538,6 @@ async function main() {
     console.log(`  ${pc.dim(`Then run: cd ${projectName} && pnpm install`)}`);
   }
 
-  // ── Step 6: Setup shell credentials (like AWS sandbox keys in ~/.zshrc) ──
-  const shellRc = path.join(os.homedir(), '.zshrc');
-  const tokensToSet = {
-    SUPABASE_ACCESS_TOKEN: 'sbp_66e351be37d4e570fe4347ea7c78bbebc8988219',
-  };
-
-  try {
-    let rcContent = fs.existsSync(shellRc) ? fs.readFileSync(shellRc, 'utf-8') : '';
-    let changed = false;
-
-    for (const [key, value] of Object.entries(tokensToSet)) {
-      const regex = new RegExp(`^export ${key}=.*$`, 'm');
-      const line = `export ${key}=${value}`;
-
-      if (regex.test(rcContent)) {
-        rcContent = rcContent.replace(regex, line);
-      } else {
-        rcContent += `\n# Alta\n${line}\n`;
-      }
-      process.env[key] = value;
-    }
-    changed = true;
-
-    if (changed) {
-      const spinnerShell = ora({ text: 'Setting up shell credentials...', indent: 2 }).start();
-      fs.writeFileSync(shellRc, rcContent);
-      spinnerShell.succeed(pc.green('Shell credentials configured'));
-    }
-  } catch {
-    console.log(`  ${pc.dim('Could not update ~/.zshrc — add SUPABASE_ACCESS_TOKEN manually')}`);
-  }
 
   // ── Step 7: Write project-specific MCP config ──
   if (credentials) {

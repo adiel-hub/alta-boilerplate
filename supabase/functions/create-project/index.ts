@@ -52,111 +52,10 @@ Deno.serve(async (req) => {
     const projectRef = sbProject.id;
     const supabaseUrl = `https://${projectRef}.supabase.co`;
 
-    // Wait for project to provision
-    console.log('Waiting for project to provision...');
-    let anonKey = '';
-    for (let i = 0; i < 12; i++) {
-      await new Promise((r) => setTimeout(r, 10000));
-
-      const keysRes = await fetch(`https://api.supabase.com/v1/projects/${projectRef}/api-keys`, {
-        headers: { Authorization: `Bearer ${SUPABASE_ACCESS_TOKEN}` },
-      });
-
-      if (keysRes.ok) {
-        const keys = await keysRes.json();
-        const anonKeyObj = keys.find((k: { name: string }) => k.name === 'anon');
-        if (anonKeyObj) {
-          anonKey = anonKeyObj.api_key;
-          break;
-        }
-      }
-    }
-
-    if (!anonKey) {
-      return Response.json(
-        { error: 'Project created but keys not ready yet. Check Supabase dashboard.', projectRef },
-        { status: 202, headers: corsHeaders }
-      );
-    }
-
     // Build database URL for local development
     const databaseUrl = `postgresql://postgres.${projectRef}:${dbPassword}@aws-0-us-east-1.pooler.supabase.com:6543/postgres`;
 
-    // ── 2. Disable email confirmation ──
-    console.log('Disabling email confirmation...');
-    try {
-      const authRes = await fetch(
-        `https://api.supabase.com/v1/projects/${projectRef}/config/auth`,
-        {
-          method: 'PATCH',
-          headers: {
-            Authorization: `Bearer ${SUPABASE_ACCESS_TOKEN}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ MAILER_AUTOCONFIRM: true }),
-        }
-      );
-      if (authRes.ok) {
-        console.log('Email confirmation disabled');
-      } else {
-        const err = await authRes.text();
-        console.error(`Failed to disable email confirmation: ${err}`);
-      }
-    } catch (err) {
-      console.error(`Auth config error: ${err}`);
-    }
-
-    // ── 3. Set shared secrets on the new project ──
-    console.log('Setting shared secrets on new project...');
-    try {
-      // Fetch shared secrets from admin Supabase
-      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-      const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-      const secretsRes = await fetch(`${supabaseUrl}/rest/v1/shared_secrets?select=key,value`, {
-        headers: {
-          apikey: serviceRoleKey,
-          Authorization: `Bearer ${serviceRoleKey}`,
-        },
-      });
-
-      if (secretsRes.ok) {
-        const secretRows: { key: string; value: string }[] = await secretsRes.json();
-
-        if (secretRows.length > 0) {
-          // Set secrets on the new Supabase project via Management API
-          const secretsPayload = secretRows.map((row) => ({
-            name: row.key,
-            value: row.value,
-          }));
-
-          const setRes = await fetch(
-            `https://api.supabase.com/v1/projects/${projectRef}/secrets`,
-            {
-              method: 'POST',
-              headers: {
-                Authorization: `Bearer ${SUPABASE_ACCESS_TOKEN}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(secretsPayload),
-            }
-          );
-
-          if (setRes.ok) {
-            console.log(`Set ${secretRows.length} shared secrets on project`);
-          } else {
-            const err = await setRes.text();
-            console.error(`Failed to set secrets: ${err}`);
-          }
-        }
-      } else {
-        console.error('Could not fetch shared secrets');
-      }
-    } catch (err) {
-      console.error(`Shared secrets error: ${err}`);
-    }
-
-    // ── 3. Create Vercel project ──
+    // ── 2. Create Vercel project ──
     console.log(`Creating Vercel project: ${name}`);
 
     const vercelCreateUrl = VERCEL_TEAM_ID
@@ -189,15 +88,16 @@ Deno.serve(async (req) => {
     });
 
     let vercelProjectUrl = '';
+    let vercelProjectId = '';
     if (vcRes.ok) {
       const vcProject = await vcRes.json();
+      vercelProjectId = vcProject.id;
       vercelProjectUrl = `https://${name}.vercel.app`;
 
-      // Set only build-time env vars on Vercel (shared secrets come from central Supabase at runtime)
+      // Set build-time env vars on Vercel (anon key will be set by the installer after polling)
       const allTargets = ['production', 'preview', 'development'];
       const envVars = [
         { key: 'VITE_SUPABASE_URL', value: supabaseUrl, target: allTargets, type: 'plain' },
-        { key: 'VITE_SUPABASE_ANON_KEY', value: anonKey, target: allTargets, type: 'plain' },
       ];
 
       const envUrl = VERCEL_TEAM_ID
@@ -228,10 +128,10 @@ Deno.serve(async (req) => {
     return Response.json(
       {
         supabaseUrl,
-        supabaseAnonKey: anonKey,
         supabaseProjectRef: projectRef,
         databaseUrl,
         vercelUrl: vercelProjectUrl,
+        vercelProjectId,
         dbPassword,
       },
       { headers: corsHeaders }
