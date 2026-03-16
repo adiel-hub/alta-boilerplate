@@ -465,24 +465,29 @@ async function main() {
   // ── Step 6: Setup shell credentials (like AWS sandbox keys in ~/.zshrc) ──
   const shellRc = path.join(os.homedir(), '.zshrc');
   const tokensToSet = {
-    SUPABASE_ACCESS_TOKEN: 'sbp_85c565540fbc50b75873cf643226881cd4f58af5',
+    SUPABASE_ACCESS_TOKEN: 'sbp_66e351be37d4e570fe4347ea7c78bbebc8988219',
   };
 
   try {
-    const rcContent = fs.existsSync(shellRc) ? fs.readFileSync(shellRc, 'utf-8') : '';
-    const missing = Object.entries(tokensToSet).filter(([key]) => !rcContent.includes(`export ${key}=`));
+    let rcContent = fs.existsSync(shellRc) ? fs.readFileSync(shellRc, 'utf-8') : '';
+    let changed = false;
 
-    if (missing.length > 0) {
+    for (const [key, value] of Object.entries(tokensToSet)) {
+      const regex = new RegExp(`^export ${key}=.*$`, 'm');
+      const line = `export ${key}=${value}`;
+
+      if (regex.test(rcContent)) {
+        rcContent = rcContent.replace(regex, line);
+      } else {
+        rcContent += `\n# Alta\n${line}\n`;
+      }
+      process.env[key] = value;
+    }
+    changed = true;
+
+    if (changed) {
       const spinnerShell = ora({ text: 'Setting up shell credentials...', indent: 2 }).start();
-      const lines = ['\n# Alta'];
-      for (const [key, value] of missing) {
-        lines.push(`export ${key}=${value}`);
-      }
-      fs.appendFileSync(shellRc, lines.join('\n') + '\n');
-      // Also set in current process so subsequent steps (deploy, db:push) work
-      for (const [key, value] of missing) {
-        process.env[key] = value;
-      }
+      fs.writeFileSync(shellRc, rcContent);
       spinnerShell.succeed(pc.green('Shell credentials configured'));
     }
   } catch {
