@@ -148,17 +148,9 @@ export default function Root() {
 
   fs.writeFileSync(
     path.join(appDir, 'components', 'layout', 'header.tsx'),
-    `import { Separator } from '@alta/design-system/components/ui/separator';
-import { Text } from '@alta/design-system/components/ui/text';
-
-export function Header() {
+    `export function Header() {
   return (
-    <header className="flex h-14 items-center gap-2 border-b px-4">
-      <Separator orientation="vertical" className="h-4" />
-      <div className="ml-auto flex items-center gap-3">
-        <Text variant="muted">Alta App</Text>
-      </div>
-    </header>
+    <header className="flex h-14 items-center justify-end border-b px-4" />
   );
 }
 `
@@ -166,49 +158,10 @@ export function Header() {
 
   fs.writeFileSync(
     path.join(appDir, 'routes', 'app', 'dashboard.tsx'),
-    `import { Card, CardContent, CardHeader, CardTitle } from '@alta/design-system/components/ui/card';
-import { Text } from '@alta/design-system/components/ui/text';
-import { Badge } from '@alta/design-system/components/ui/badge';
-import { Separator } from '@alta/design-system/components/ui/separator';
-
-export default function DashboardRoute() {
+    `export default function DashboardRoute() {
   return (
     <div className="space-y-6">
-      <div>
-        <Text variant="heading3">Dashboard</Text>
-        <Text variant="muted" className="mt-1">Welcome to your app</Text>
-      </div>
-      <Separator />
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Status</CardTitle>
-            <Badge variant="default">Active</Badge>
-          </CardHeader>
-          <CardContent>
-            <Text variant="heading3">All systems go</Text>
-            <Text variant="small" className="mt-1 text-muted-foreground">Your app is running smoothly</Text>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Environment</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Text variant="heading3">Development</Text>
-            <Text variant="small" className="mt-1 text-muted-foreground">Local dev server</Text>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Framework</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Text variant="heading3">Alta</Text>
-            <Text variant="small" className="mt-1 text-muted-foreground">React + Supabase + Vercel</Text>
-          </CardContent>
-        </Card>
-      </div>
+      <h1 className="text-2xl font-bold">Dashboard</h1>
     </div>
   );
 }
@@ -217,24 +170,10 @@ export default function DashboardRoute() {
 
   fs.writeFileSync(
     path.join(appDir, 'routes', 'app', 'settings.tsx'),
-    `import { Card, CardContent, CardHeader, CardTitle } from '@alta/design-system/components/ui/card';
-import { Text } from '@alta/design-system/components/ui/text';
-
-export default function SettingsRoute() {
+    `export default function SettingsRoute() {
   return (
     <div className="space-y-6">
-      <div>
-        <Text variant="heading3">Settings</Text>
-        <Text variant="muted" className="mt-1">Manage your app preferences</Text>
-      </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>App Settings</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Text variant="paragraph">Configure your app here.</Text>
-        </CardContent>
-      </Card>
+      <h1 className="text-2xl font-bold">Settings</h1>
     </div>
   );
 }
@@ -431,7 +370,6 @@ async function main() {
   }
 
   // ── Step 4: Wait for Supabase project to provision & get anon key ──
-  const SUPABASE_TOKEN = 'sbp_66e351be37d4e570fe4347ea7c78bbebc8988219';
   let anonKey = '';
   if (credentials) {
     const spinnerKeys = ora({ text: 'Waiting for Supabase project to provision...', indent: 2 }).start();
@@ -441,7 +379,7 @@ async function main() {
       await new Promise((r) => setTimeout(r, 5000));
       try {
         const res = await fetch(`https://api.supabase.com/v1/projects/${ref}/api-keys`, {
-          headers: { Authorization: `Bearer ${SUPABASE_TOKEN}` },
+          headers: { Authorization: `Bearer ${credentials.supabaseToken}` },
         });
         if (res.ok) {
           const keys = await res.json();
@@ -510,16 +448,44 @@ async function main() {
   }
 
 
-  // ── Step 6: Login & link Supabase project ──
+  // ── Step 6: Login & link Supabase + Vercel ──
   if (credentials) {
     const spinnerLink = ora({ text: 'Linking Supabase project...', indent: 2 }).start();
     try {
-      run(`npx supabase login --token ${SUPABASE_TOKEN}`, targetDir);
+      run(`npx supabase login --token ${credentials.supabaseToken}`, targetDir);
       run(`npx supabase link --project-ref ${credentials.supabaseProjectRef}`, targetDir);
       spinnerLink.succeed(pc.green('Supabase project linked'));
     } catch {
       spinnerLink.warn(pc.yellow('Could not link Supabase project'));
       console.log(`  ${pc.dim(`Run manually: npx supabase login && npx supabase link --project-ref ${credentials.supabaseProjectRef}`)}`);
+    }
+
+    const spinnerVercel = ora({ text: 'Authenticating Vercel CLI...', indent: 2 }).start();
+    try {
+      // Persist Vercel auth globally so user doesn't need --token on every command
+      const vercelConfigDir = path.join(process.env.HOME, 'Library', 'Application Support', 'com.vercel.cli');
+      if (!fs.existsSync(vercelConfigDir)) fs.mkdirSync(vercelConfigDir, { recursive: true });
+
+      fs.writeFileSync(
+        path.join(vercelConfigDir, 'auth.json'),
+        JSON.stringify({ token: credentials.vercelToken }) + '\n'
+      );
+
+      // Set current team scope
+      const configPath = path.join(vercelConfigDir, 'config.json');
+      let vercelConfig = {};
+      if (fs.existsSync(configPath)) {
+        vercelConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+      }
+      vercelConfig.currentTeam = credentials.vercelTeamId;
+      fs.writeFileSync(configPath, JSON.stringify(vercelConfig, null, 2) + '\n');
+
+      // Link the project to Vercel
+      run(`npx vercel link --project ${projectName} --yes`, targetDir);
+      spinnerVercel.succeed(pc.green('Vercel authenticated & project linked'));
+    } catch {
+      spinnerVercel.warn(pc.yellow('Could not link Vercel project'));
+      console.log(`  ${pc.dim('Deploy manually: cd ' + projectName + ' && pnpm run deploy')}`);
     }
   }
 
@@ -535,7 +501,7 @@ async function main() {
           supabase: {
             url: `https://mcp.supabase.com/mcp`,
             headers: {
-              'x-supabase-access-token': SUPABASE_TOKEN,
+              'x-supabase-access-token': credentials.supabaseToken,
               'x-project-ref': credentials.supabaseProjectRef,
             },
           },
@@ -589,7 +555,7 @@ async function main() {
       spinnerDeploy.succeed(pc.green('Deployed to Vercel'));
     } catch {
       spinnerDeploy.warn(pc.yellow('Could not deploy to Vercel'));
-      console.log(`  ${pc.dim('Deploy manually: cd ' + projectName + ' && pnpm deploy')}`);
+      console.log(`  ${pc.dim('Deploy manually: cd ' + projectName + ' && pnpm run deploy')}`);
     }
   }
 
