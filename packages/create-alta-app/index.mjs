@@ -508,8 +508,7 @@ async function main() {
         spinnerVercel.text = 'Could not source ~/.zshrc — using process.env instead';
       }
 
-      // Link the Vercel project
-      // Link from monorepo root so rootDirectory (apps/ai-engineer/<name>) resolves correctly
+      // Link from monorepo root — matches rootDirectory setting on Vercel project
       spinnerVercel.text = `Linking Vercel project: ${projectName}...`;
       runVerbose(`npx vercel link --project ${projectName} --yes --token ${credentials.vercelToken}`, process.cwd());
       spinnerVercel.succeed(pc.green('Vercel configured & linked'));
@@ -584,8 +583,8 @@ async function main() {
   if (credentials?.vercelToken) {
     const spinnerDeploy = ora({ text: 'Deploying to Vercel...', indent: 2 }).start();
     try {
-      // Deploy from monorepo root so rootDirectory (apps/ai-engineer/<name>) resolves correctly
-      spinnerDeploy.text = `Running: vercel --token ${credentials.vercelToken.slice(0, 8)}... from monorepo root`;
+      // Deploy from monorepo root — rootDirectory on Vercel project points to the app
+      spinnerDeploy.text = `Deploying from monorepo root...`;
       const deployOutput = runVerbose(`npx vercel --yes --token ${credentials.vercelToken}`, process.cwd());
       if (deployOutput) console.log(`\n${pc.dim(deployOutput.trim())}`);
       spinnerDeploy.succeed(pc.green(`Deployed to Vercel → ${credentials.vercelUrl || projectName + '.vercel.app'}`));
