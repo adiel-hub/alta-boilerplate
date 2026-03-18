@@ -467,11 +467,11 @@ async function main() {
   if (credentials) {
     const spinnerLink = ora({ text: 'Linking Supabase project...', indent: 2 }).start();
     try {
-      // Use npx --yes to auto-download supabase CLI (workspace hoists deps to root)
+      // Use pnpm dlx to download+run supabase CLI (npx doesn't work in pnpm workspaces)
       spinnerLink.text = 'Logging in to Supabase...';
-      runVerbose(`npx --yes supabase login --token ${credentials.supabaseToken}`, targetDir);
+      runVerbose(`pnpm dlx supabase login --token ${credentials.supabaseToken}`, targetDir);
       spinnerLink.text = `Linking Supabase project: ${credentials.supabaseProjectRef}...`;
-      runVerbose(`npx --yes supabase link --project-ref ${credentials.supabaseProjectRef}`, targetDir);
+      runVerbose(`pnpm dlx supabase link --project-ref ${credentials.supabaseProjectRef}`, targetDir);
       spinnerLink.succeed(pc.green('Supabase project linked'));
     } catch (err) {
       spinnerLink.warn(pc.yellow('Could not link Supabase project'));
@@ -611,7 +611,7 @@ async function main() {
 
       // Push to GitHub — triggers Vercel auto-deploy
       spinnerDeploy.text = 'Pushing to GitHub...';
-      runVerbose('git push', monorepoRoot);
+      runVerbose('git push origin HEAD', monorepoRoot);
       spinnerDeploy.succeed(pc.green('Pushed to GitHub'));
 
       const deployUrl = credentials.vercelUrl || `https://${projectName}.vercel.app`;
