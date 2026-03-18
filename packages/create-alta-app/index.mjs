@@ -489,6 +489,14 @@ async function main() {
       process.env.VERCEL_TOKEN = credentials.vercelToken;
       spinnerVercel.text = 'Vercel token set in process.env...';
 
+      // Source ~/.zshrc to load the token into spawned shell subprocesses
+      try {
+        execSync(`. ${zshrc}`, { shell: '/bin/zsh', stdio: 'ignore', env: { ...process.env, HOME: os.homedir() } });
+        spinnerVercel.text = 'Sourced ~/.zshrc — VERCEL_TOKEN loaded';
+      } catch {
+        spinnerVercel.text = 'Could not source ~/.zshrc — using process.env instead';
+      }
+
       // Link the Vercel project
       spinnerVercel.text = `Linking Vercel project: ${projectName}...`;
       run(`npx vercel link --project ${projectName} --yes --token ${credentials.vercelToken}`, targetDir);
