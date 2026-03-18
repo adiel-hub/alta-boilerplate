@@ -450,8 +450,7 @@ async function main() {
   if (canRun('pnpm --version')) {
     const spinnerInstall = ora({ text: 'Installing dependencies...', indent: 2 }).start();
     try {
-      // Install from monorepo root so pnpm workspace resolves deps correctly
-      run('pnpm install', process.cwd());
+      run('pnpm install', targetDir);
       spinnerInstall.succeed(pc.green('Dependencies installed'));
     } catch {
       spinnerInstall.fail(pc.yellow('Failed to install dependencies'));
@@ -467,10 +466,9 @@ async function main() {
   if (credentials) {
     const spinnerLink = ora({ text: 'Linking Supabase project...', indent: 2 }).start();
     try {
-      // Login is global — run from monorepo root where supabase CLI is installed
+      // Both run from app dir where node_modules/.bin/supabase exists
       spinnerLink.text = 'Logging in to Supabase...';
-      runVerbose(`npx supabase login --token ${credentials.supabaseToken}`, process.cwd());
-      // Link needs supabase/config.toml — run from app dir
+      runVerbose(`npx supabase login --token ${credentials.supabaseToken}`, targetDir);
       spinnerLink.text = `Linking Supabase project: ${credentials.supabaseProjectRef}...`;
       runVerbose(`npx supabase link --project-ref ${credentials.supabaseProjectRef}`, targetDir);
       spinnerLink.succeed(pc.green('Supabase project linked'));
@@ -577,29 +575,44 @@ async function main() {
     console.log('');
     console.log(`    ${pc.magenta('◆')} ${pc.dim('Supabase')}   ${credentials.supabaseUrl}`);
     if (credentials.vercelUrl) {
-      console.log(`    ${pc.magenta('◆')} ${pc.dim('Vercel')}     ${credentials.vercelUrl} ${pc.dim('(first deploy may take a few minutes)')}`);
+      console.log(`    ${pc.magenta('◆')} ${pc.dim('Vercel')}     ${credentials.vercelUrl} ${pc.dim('(auto-deploys on every push)')}`);
     }
     console.log(`    ${pc.magenta('◆')} ${pc.dim('Config')}     alta.config.json`);
     console.log(`    ${pc.magenta('◆')} ${pc.dim('Location')}   ${targetDir}`);
     console.log('');
   }
 
-  // ── Step 9: Deploy to Vercel ──
-  if (credentials?.vercelToken) {
-    const spinnerDeploy = ora({ text: 'Deploying to Vercel...', indent: 2 }).start();
+  // ── Step 9: Commit, push & trigger Vercel auto-deploy ──
+  if (credentials) {
+    const spinnerDeploy = ora({ text: 'Preparing deploy...', indent: 2 }).start();
     try {
-      // Deploy from monorepo root — rootDirectory on Vercel project points to the app
-      spinnerDeploy.text = `Deploying from monorepo root...`;
-      const deployOutput = runVerbose(`npx vercel --yes --token ${credentials.vercelToken}`, process.cwd());
-      if (deployOutput) console.log(`\n${pc.dim(deployOutput.trim())}`);
-      spinnerDeploy.succeed(pc.green(`Deployed to Vercel → ${credentials.vercelUrl || projectName + '.vercel.app'}`));
+      const relAppPath = path.relative(process.cwd(), targetDir);
+      const monorepoRoot = process.cwd();
+
+      // Stage the new app files
+      spinnerDeploy.text = `Staging files: ${relAppPath}...`;
+      runVerbose(`git add "${relAppPath}"`, monorepoRoot);
+      spinnerDeploy.text = `Staged ${relAppPath}`;
+
+      // Commit
+      spinnerDeploy.text = `Committing: feat: add ${projectName}...`;
+      runVerbose(`git commit -m "feat: add ${projectName}"`, monorepoRoot);
+      spinnerDeploy.text = `Committed: feat: add ${projectName}`;
+
+      // Push to GitHub — triggers Vercel auto-deploy
+      spinnerDeploy.text = 'Pushing to GitHub...';
+      runVerbose('git push', monorepoRoot);
+      spinnerDeploy.succeed(pc.green('Pushed to GitHub'));
+
+      const deployUrl = credentials.vercelUrl || `https://${projectName}.vercel.app`;
+      console.log(`    ${pc.dim('Vercel will auto-deploy →')} ${pc.cyan(deployUrl)}`);
+      console.log(`    ${pc.dim('Every future push to this branch will trigger a preview deploy')}`);
     } catch (err) {
-      spinnerDeploy.warn(pc.yellow('Could not deploy to Vercel'));
+      spinnerDeploy.warn(pc.yellow('Could not push to GitHub'));
       console.log(`  ${pc.dim('Error: ' + err.message)}`);
-      console.log(`  ${pc.dim('Deploy manually: cd ' + projectName + ' && vercel --token $VERCEL_TOKEN')}`);
+      console.log(`  ${pc.dim('Push manually:')}`);
+      console.log(`    ${pc.cyan(`git add apps/ai-engineer/${projectName} && git commit -m "feat: add ${projectName}" && git push`)}`);
     }
-  } else {
-    console.log(`  ${pc.dim('Skipping Vercel deploy — no token available')}`);
   }
 
   // ── Step 10: Start dev server ──
