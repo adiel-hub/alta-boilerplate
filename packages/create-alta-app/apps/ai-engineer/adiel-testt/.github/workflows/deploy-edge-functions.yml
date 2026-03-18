@@ -1,0 +1,48 @@
+name: Deploy Edge Functions
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/ai-engineer/**/supabase/functions/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # Find which projects had edge function changes
+      - name: Detect changed projects
+        id: changed
+        run: |
+          CHANGED_PROJECTS=$(git diff --name-only HEAD~1 HEAD \
+            | grep 'apps/ai-engineer/.*/supabase/functions/' \
+            | sed 's|apps/ai-engineer/\([^/]*\)/.*|\1|' \
+            | sort -u)
+          echo "projects=$CHANGED_PROJECTS" >> $GITHUB_OUTPUT
+          echo "Changed projects: $CHANGED_PROJECTS"
+
+      # Deploy edge functions for each changed project
+      - name: Deploy functions
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          for PROJECT_DIR in ${{ steps.changed.outputs.projects }}; do
+            CONFIG="apps/ai-engineer/$PROJECT_DIR/alta.config.json"
+            if [ -f "$CONFIG" ]; then
+              PROJECT_REF=$(jq -r '.supabaseProjectRef' "$CONFIG")
+              echo "Deploying edge functions for $PROJECT_DIR (ref: $PROJECT_REF)"
+              supabase functions deploy \
+                --project-ref "$PROJECT_REF" \
+                --no-verify-jwt
+            else
+              echo "No alta.config.json found for $PROJECT_DIR, skipping"
+            fi
+          done
