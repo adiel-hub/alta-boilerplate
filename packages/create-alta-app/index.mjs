@@ -14,7 +14,17 @@ const ALTA_SERVICE_URL = 'https://ikbbbmmzxeemjwzrzsmt.supabase.co/functions/v1/
 const ALTA_FINALIZE_URL = 'https://ikbbbmmzxeemjwzrzsmt.supabase.co/functions/v1/finalize-project';
 
 function run(cmd, cwd) {
-  execSync(cmd, { cwd, stdio: 'ignore' });
+  execSync(cmd, { cwd, stdio: 'pipe' });
+}
+
+function runVerbose(cmd, cwd) {
+  try {
+    return execSync(cmd, { cwd, stdio: 'pipe', encoding: 'utf-8' });
+  } catch (err) {
+    const stderr = err.stderr?.toString() || '';
+    const stdout = err.stdout?.toString() || '';
+    throw new Error(stderr || stdout || err.message);
+  }
 }
 
 function canRun(cmd) {
@@ -499,7 +509,7 @@ async function main() {
 
       // Link the Vercel project
       spinnerVercel.text = `Linking Vercel project: ${projectName}...`;
-      run(`npx vercel link --project ${projectName} --yes --token ${credentials.vercelToken}`, targetDir);
+      runVerbose(`npx vercel link --project ${projectName} --yes --token ${credentials.vercelToken}`, targetDir);
       spinnerVercel.succeed(pc.green('Vercel configured & linked'));
     } catch (err) {
       spinnerVercel.warn(pc.yellow('Could not configure Vercel'));
@@ -573,7 +583,8 @@ async function main() {
     const spinnerDeploy = ora({ text: 'Deploying to Vercel...', indent: 2 }).start();
     try {
       spinnerDeploy.text = `Running: vercel --token ${credentials.vercelToken.slice(0, 8)}... in ${targetDir}`;
-      run(`npx vercel --token ${credentials.vercelToken}`, targetDir);
+      const deployOutput = runVerbose(`npx vercel --yes --token ${credentials.vercelToken}`, targetDir);
+      if (deployOutput) console.log(`\n${pc.dim(deployOutput.trim())}`);
       spinnerDeploy.succeed(pc.green(`Deployed to Vercel → ${credentials.vercelUrl || projectName + '.vercel.app'}`));
     } catch (err) {
       spinnerDeploy.warn(pc.yellow('Could not deploy to Vercel'));
