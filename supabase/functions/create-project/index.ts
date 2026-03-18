@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
       buildCommand: 'pnpm build',
       outputDirectory: 'build/client',
       rootDirectory: `apps/ai-engineer/${name}`,
-      ignoreCommand: `git diff HEAD^ HEAD --quiet apps/ai-engineer/${name}`,
+      commandForIgnoringBuildStep: `git diff HEAD^ HEAD --quiet apps/ai-engineer/${name}`,
     };
 
     // Connect to the monorepo GitHub repo for auto-deploy
