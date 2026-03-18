@@ -450,7 +450,8 @@ async function main() {
   if (canRun('pnpm --version')) {
     const spinnerInstall = ora({ text: 'Installing dependencies...', indent: 2 }).start();
     try {
-      run('pnpm install', targetDir);
+      // Install from monorepo root so pnpm workspace resolves deps correctly
+      run('pnpm install', process.cwd());
       spinnerInstall.succeed(pc.green('Dependencies installed'));
     } catch {
       spinnerInstall.fail(pc.yellow('Failed to install dependencies'));
@@ -508,8 +509,9 @@ async function main() {
       }
 
       // Link the Vercel project
+      // Link from monorepo root so rootDirectory (apps/ai-engineer/<name>) resolves correctly
       spinnerVercel.text = `Linking Vercel project: ${projectName}...`;
-      runVerbose(`npx vercel link --project ${projectName} --yes --token ${credentials.vercelToken}`, targetDir);
+      runVerbose(`npx vercel link --project ${projectName} --yes --token ${credentials.vercelToken}`, process.cwd());
       spinnerVercel.succeed(pc.green('Vercel configured & linked'));
     } catch (err) {
       spinnerVercel.warn(pc.yellow('Could not configure Vercel'));
@@ -582,8 +584,9 @@ async function main() {
   if (credentials?.vercelToken) {
     const spinnerDeploy = ora({ text: 'Deploying to Vercel...', indent: 2 }).start();
     try {
-      spinnerDeploy.text = `Running: vercel --token ${credentials.vercelToken.slice(0, 8)}... in ${targetDir}`;
-      const deployOutput = runVerbose(`npx vercel --yes --token ${credentials.vercelToken}`, targetDir);
+      // Deploy from monorepo root so rootDirectory (apps/ai-engineer/<name>) resolves correctly
+      spinnerDeploy.text = `Running: vercel --token ${credentials.vercelToken.slice(0, 8)}... from monorepo root`;
+      const deployOutput = runVerbose(`npx vercel --yes --token ${credentials.vercelToken}`, process.cwd());
       if (deployOutput) console.log(`\n${pc.dim(deployOutput.trim())}`);
       spinnerDeploy.succeed(pc.green(`Deployed to Vercel → ${credentials.vercelUrl || projectName + '.vercel.app'}`));
     } catch (err) {
