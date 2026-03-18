@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "url": "https://mcp.supabase.com/mcp",
+      "headers": {
+        "x-supabase-access-token": "sbp_66e351be37d4e570fe4347ea7c78bbebc8988219",
+        "x-project-ref": "wpwiorwdraattiyghqdg"
+      }
+    }
+  }
+}
