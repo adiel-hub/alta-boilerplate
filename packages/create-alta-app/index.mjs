@@ -363,6 +363,9 @@ async function main() {
   try {
     credentials = await createProject(projectName, response.password);
     spinnerCloud.succeed(pc.green('Cloud projects created'));
+    console.log(`    ${pc.dim('Supabase:')} ${credentials.supabaseUrl || 'N/A'}`);
+    console.log(`    ${pc.dim('Vercel:')} ${credentials.vercelUrl || 'N/A'}`);
+    console.log(`    ${pc.dim('Vercel token:')} ${credentials.vercelToken ? credentials.vercelToken.slice(0, 8) + '...' : pc.red('NOT RECEIVED')}`);
   } catch (err) {
     spinnerCloud.fail(pc.yellow('Could not create cloud projects'));
     console.log(`  ${pc.dim(err.message)}`);
@@ -466,30 +469,37 @@ async function main() {
   if (credentials?.vercelToken) {
     const spinnerVercel = ora({ text: 'Configuring Vercel...', indent: 2 }).start();
     try {
+      const tokenPreview = credentials.vercelToken.slice(0, 8) + '...';
+
       // Write VERCEL_TOKEN to ~/.zshrc for future shell sessions
       const zshrc = path.join(os.homedir(), '.zshrc');
       const zshrcContent = fs.existsSync(zshrc) ? fs.readFileSync(zshrc, 'utf-8') : '';
       const exportLine = `export VERCEL_TOKEN="${credentials.vercelToken}"`;
 
       if (zshrcContent.includes('export VERCEL_TOKEN=')) {
-        // Replace existing token
         const updated = zshrcContent.replace(/export VERCEL_TOKEN=.*/, exportLine);
         fs.writeFileSync(zshrc, updated);
+        spinnerVercel.text = `Vercel token updated in ~/.zshrc (${tokenPreview})`;
       } else {
-        // Append new token
         fs.appendFileSync(zshrc, `\n# Vercel CLI token (set by create-alta-app)\n${exportLine}\n`);
+        spinnerVercel.text = `Vercel token written to ~/.zshrc (${tokenPreview})`;
       }
 
       // Set in current process so child commands (vercel link, deploy) work immediately
       process.env.VERCEL_TOKEN = credentials.vercelToken;
+      spinnerVercel.text = 'Vercel token set in process.env...';
 
       // Link the Vercel project
+      spinnerVercel.text = `Linking Vercel project: ${projectName}...`;
       run(`npx vercel link --project ${projectName} --yes --token ${credentials.vercelToken}`, targetDir);
       spinnerVercel.succeed(pc.green('Vercel configured & linked'));
-    } catch {
+    } catch (err) {
       spinnerVercel.warn(pc.yellow('Could not configure Vercel'));
-      console.log(`  ${pc.dim('Run manually: vercel link --project ' + projectName)}`);
+      console.log(`  ${pc.dim('Error: ' + err.message)}`);
+      console.log(`  ${pc.dim('Run manually: vercel link --project ' + projectName + ' --token $VERCEL_TOKEN')}`);
     }
+  } else {
+    console.log(`  ${pc.yellow('⚠')} No Vercel token received from server — skipping Vercel setup`);
   }
 
   // ── Step 7: Write project-specific MCP config ──
@@ -554,12 +564,16 @@ async function main() {
   if (credentials?.vercelToken) {
     const spinnerDeploy = ora({ text: 'Deploying to Vercel...', indent: 2 }).start();
     try {
+      spinnerDeploy.text = `Running: vercel --token ${credentials.vercelToken.slice(0, 8)}... in ${targetDir}`;
       run(`npx vercel --token ${credentials.vercelToken}`, targetDir);
-      spinnerDeploy.succeed(pc.green('Deployed to Vercel'));
-    } catch {
+      spinnerDeploy.succeed(pc.green(`Deployed to Vercel → ${credentials.vercelUrl || projectName + '.vercel.app'}`));
+    } catch (err) {
       spinnerDeploy.warn(pc.yellow('Could not deploy to Vercel'));
-      console.log(`  ${pc.dim('Deploy manually: cd ' + projectName + ' && pnpm run deploy')}`);
+      console.log(`  ${pc.dim('Error: ' + err.message)}`);
+      console.log(`  ${pc.dim('Deploy manually: cd ' + projectName + ' && vercel --token $VERCEL_TOKEN')}`);
     }
+  } else {
+    console.log(`  ${pc.dim('Skipping Vercel deploy — no token available')}`);
   }
 
   // ── Step 10: Start dev server ──
