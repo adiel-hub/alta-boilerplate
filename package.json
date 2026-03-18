@@ -16,8 +16,8 @@
     "db:push": "npx supabase db push --linked",
     "db:diff": "npx supabase db diff --linked",
     "db:reset": "npx supabase db reset --linked",
-    "deploy": "vercel",
-    "deploy:prod": "vercel --prod"
+    "deploy": "vercel --token $VERCEL_TOKEN",
+    "deploy:prod": "vercel --prod --token $VERCEL_TOKEN"
   },
   "dependencies": {
     "@react-router/node": "^7.3.0",

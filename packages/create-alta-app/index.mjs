@@ -2,6 +2,7 @@
 
 import { execSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import prompts from 'prompts';
 import ora from 'ora';
@@ -461,28 +462,33 @@ async function main() {
     }
   }
 
-  // ── Step 6b: Login & link Vercel ──
-  if (credentials) {
-    const isVercelLoggedIn = canRun('npx vercel whoami');
-    if (!isVercelLoggedIn) {
-      console.log(`\n  ${pc.cyan('ℹ')} ${pc.bold('Vercel login required')} — a browser will open for one-time authentication.\n`);
-      try {
-        execSync('npx vercel login', { cwd: targetDir, stdio: 'inherit' });
-      } catch {
-        console.log(`  ${pc.yellow('⚠')} Vercel login skipped — run ${pc.bold('"vercel login"')} later to enable deploys`);
-      }
-    }
+  // ── Step 6b: Set Vercel token & link project ──
+  if (credentials?.vercelToken) {
+    const spinnerVercel = ora({ text: 'Configuring Vercel...', indent: 2 }).start();
+    try {
+      // Write VERCEL_TOKEN to ~/.zshrc for future shell sessions
+      const zshrc = path.join(os.homedir(), '.zshrc');
+      const zshrcContent = fs.existsSync(zshrc) ? fs.readFileSync(zshrc, 'utf-8') : '';
+      const exportLine = `export VERCEL_TOKEN="${credentials.vercelToken}"`;
 
-    // Link the Vercel project (only if logged in now)
-    if (isVercelLoggedIn || canRun('npx vercel whoami')) {
-      const spinnerVercel = ora({ text: 'Linking Vercel project...', indent: 2 }).start();
-      try {
-        run(`npx vercel link --project ${projectName} --yes`, targetDir);
-        spinnerVercel.succeed(pc.green('Vercel project linked'));
-      } catch {
-        spinnerVercel.warn(pc.yellow('Could not link Vercel project'));
-        console.log(`  ${pc.dim('Run manually: vercel link --project ' + projectName)}`);
+      if (zshrcContent.includes('export VERCEL_TOKEN=')) {
+        // Replace existing token
+        const updated = zshrcContent.replace(/export VERCEL_TOKEN=.*/, exportLine);
+        fs.writeFileSync(zshrc, updated);
+      } else {
+        // Append new token
+        fs.appendFileSync(zshrc, `\n# Vercel CLI token (set by create-alta-app)\n${exportLine}\n`);
       }
+
+      // Set in current process so child commands (vercel link, deploy) work immediately
+      process.env.VERCEL_TOKEN = credentials.vercelToken;
+
+      // Link the Vercel project
+      run(`npx vercel link --project ${projectName} --yes --token ${credentials.vercelToken}`, targetDir);
+      spinnerVercel.succeed(pc.green('Vercel configured & linked'));
+    } catch {
+      spinnerVercel.warn(pc.yellow('Could not configure Vercel'));
+      console.log(`  ${pc.dim('Run manually: vercel link --project ' + projectName)}`);
     }
   }
 
@@ -545,10 +551,10 @@ async function main() {
   }
 
   // ── Step 9: Deploy to Vercel ──
-  if (credentials?.vercelProjectName) {
+  if (credentials?.vercelToken) {
     const spinnerDeploy = ora({ text: 'Deploying to Vercel...', indent: 2 }).start();
     try {
-      run('pnpm run deploy', targetDir);
+      run(`npx vercel --token ${credentials.vercelToken}`, targetDir);
       spinnerDeploy.succeed(pc.green('Deployed to Vercel'));
     } catch {
       spinnerDeploy.warn(pc.yellow('Could not deploy to Vercel'));

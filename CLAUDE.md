@@ -39,14 +39,18 @@
 - `pnpm format:check` - Check formatting
 
 ### Vercel Deployment
-- `pnpm run deploy` - **Preview deploy** (gives a unique preview URL to test)
-- `pnpm run deploy:prod` - **Production deploy** (updates the live site)
+- **ALWAYS pass `--token $VERCEL_TOKEN`** with every Vercel CLI command:
+  ```
+  vercel --token $VERCEL_TOKEN              # Preview deploy
+  vercel --prod --token $VERCEL_TOKEN       # Production deploy
+  vercel env pull --token $VERCEL_TOKEN     # Pull env vars
+  ```
 - Preview deploys are created per push — each gets a unique URL like `https://project-xyz123.vercel.app`
 - Production deploy updates `https://<project-name>.vercel.app`
-- **ONLY run `pnpm run deploy:prod` when the user explicitly asks** (e.g. "deploy to production", "go live")
+- **ONLY run production deploy when the user explicitly asks** (e.g. "deploy to production", "go live")
 - After making code changes, **always commit, push, and deploy a preview**:
   ```
-  git add -A && git commit -m "description" && git push && pnpm run deploy
+  git add -A && git commit -m "description" && git push && vercel --token $VERCEL_TOKEN
   ```
 - Auto-deploy is also set up: every push to GitHub triggers a Vercel deploy automatically
 
@@ -114,15 +118,17 @@ Shared API keys (Anthropic, Cursor, Lovable, etc.) are automatically set as Supa
 | `VITE_SUPABASE_ANON_KEY` | Supabase anon key — used at build time |
 
 ### Vercel Authentication
-The installer prompts the user to `vercel login` (opens browser) if not already authenticated, then runs `vercel link` to connect the project. After that, all Vercel CLI commands (`vercel deploy`, `vercel env pull`, etc.) just work.
+The installer writes `export VERCEL_TOKEN=<token>` to `~/.zshrc` and links the project with `vercel link`. The `$VERCEL_TOKEN` env var is available in all new shell sessions.
 
-If Vercel CLI commands fail with "No credentials found":
+**IMPORTANT:** Always pass `--token $VERCEL_TOKEN` with every Vercel CLI command. Never run bare `vercel` commands without the token flag.
+
+If Vercel commands fail with "No credentials found":
 ```bash
-vercel login
+source ~/.zshrc  # reload to pick up VERCEL_TOKEN
 ```
 
 ### Deploys
-- **Vercel**: Auto-deploys on every push to GitHub. Manual deploy: `pnpm run deploy` (preview) or `pnpm run deploy:prod` (production)
+- **Vercel**: Auto-deploys on every push to GitHub. Manual deploy: `vercel --token $VERCEL_TOKEN` (preview) or `vercel --prod --token $VERCEL_TOKEN` (production)
 - **Edge functions**: Deploy via `npx supabase functions deploy <name> --linked`
 
 ## MCP
