@@ -3,9 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "npx react-router dev",
-    "build": "npx react-router build",
-    "preview": "npx react-router preview",
+    "dev": "react-router dev",
+    "build": "react-router build",
+    "preview": "react-router preview",
     "type-check": "tsc --noEmit",
     "lint": "eslint app/",
     "test": "vitest run",
