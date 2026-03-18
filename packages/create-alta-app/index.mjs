@@ -463,23 +463,26 @@ async function main() {
 
   // ── Step 6b: Login & link Vercel ──
   if (credentials) {
-    // Check if already logged in to Vercel
-    if (!canRun('npx vercel whoami')) {
-      console.log(`\n  ${pc.cyan('Vercel login required — opening browser...')}\n`);
+    const isVercelLoggedIn = canRun('npx vercel whoami');
+    if (!isVercelLoggedIn) {
+      console.log(`\n  ${pc.cyan('ℹ')} ${pc.bold('Vercel login required')} — a browser will open for one-time authentication.\n`);
       try {
         execSync('npx vercel login', { cwd: targetDir, stdio: 'inherit' });
       } catch {
-        console.log(`  ${pc.dim('Vercel login skipped — run "vercel login" later to enable deploys')}`);
+        console.log(`  ${pc.yellow('⚠')} Vercel login skipped — run ${pc.bold('"vercel login"')} later to enable deploys`);
       }
     }
 
-    const spinnerVercel = ora({ text: 'Linking Vercel project...', indent: 2 }).start();
-    try {
-      run(`npx vercel link --project ${projectName} --yes`, targetDir);
-      spinnerVercel.succeed(pc.green('Vercel project linked'));
-    } catch {
-      spinnerVercel.warn(pc.yellow('Could not link Vercel project'));
-      console.log(`  ${pc.dim('Run manually: vercel link --project ' + projectName)}`);
+    // Link the Vercel project (only if logged in now)
+    if (isVercelLoggedIn || canRun('npx vercel whoami')) {
+      const spinnerVercel = ora({ text: 'Linking Vercel project...', indent: 2 }).start();
+      try {
+        run(`npx vercel link --project ${projectName} --yes`, targetDir);
+        spinnerVercel.succeed(pc.green('Vercel project linked'));
+      } catch {
+        spinnerVercel.warn(pc.yellow('Could not link Vercel project'));
+        console.log(`  ${pc.dim('Run manually: vercel link --project ' + projectName)}`);
+      }
     }
   }
 
