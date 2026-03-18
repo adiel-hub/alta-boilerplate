@@ -467,11 +467,16 @@ async function main() {
   if (credentials) {
     const spinnerLink = ora({ text: 'Linking Supabase project...', indent: 2 }).start();
     try {
-      run(`npx supabase login --token ${credentials.supabaseToken}`, targetDir);
-      run(`npx supabase link --project-ref ${credentials.supabaseProjectRef}`, targetDir);
+      // Login is global — run from monorepo root where supabase CLI is installed
+      spinnerLink.text = 'Logging in to Supabase...';
+      runVerbose(`npx supabase login --token ${credentials.supabaseToken}`, process.cwd());
+      // Link needs supabase/config.toml — run from app dir
+      spinnerLink.text = `Linking Supabase project: ${credentials.supabaseProjectRef}...`;
+      runVerbose(`npx supabase link --project-ref ${credentials.supabaseProjectRef}`, targetDir);
       spinnerLink.succeed(pc.green('Supabase project linked'));
-    } catch {
+    } catch (err) {
       spinnerLink.warn(pc.yellow('Could not link Supabase project'));
+      console.log(`  ${pc.dim('Error: ' + err.message)}`);
       console.log(`  ${pc.dim(`Run manually: npx supabase login && npx supabase link --project-ref ${credentials.supabaseProjectRef}`)}`);
     }
   }
